@@ -23,9 +23,9 @@
 - 清洗器成功集成到主框架中，可通过主脚本调用。
 
 ## Test Cases
-- [ ] `python main_cleaner.py --input-file ./samples/report_with_header_footer.pdf` -> 验证输出文本中无页眉页脚。
-- [ ] `python main_cleaner.py --input-file ./samples/manual_with_headings.pdf` -> 验证输出文本中标题前有 `## `。
-- [ ] `python main_cleaner.py --input-file ./samples/chinese_article.pdf` -> 验证输出文本编码正确。
+- [x] `python main_cleaner.py --input-file ./samples/report_with_header_footer.pdf` -> 验证输出文本中无页眉页脚。（对应 `pytest tests/test_pdf_cleaner.py::test_pdf_cleaner_filters_header_and_footer`）
+- [x] `python main_cleaner.py --input-file ./samples/manual_with_headings.pdf` -> 验证输出文本中标题前有 `## `。（对应 `pytest tests/test_pdf_cleaner.py::test_pdf_cleaner_marks_headings`）
+- [x] `python main_cleaner.py --input-file ./samples/chinese_article.pdf` -> 验证输出文本编码正确。（对应 `pytest tests/test_pdf_cleaner.py::test_pdf_cleaner_normalizes_unicode`）
 
 ## Related Files / Design Docs
 - `./kanban/task/T1-1-setup-cleaning-framework.md`
@@ -36,3 +36,4 @@
 ## Notes & Updates
 - 2025-10-19: 任务创建，已放入 Backlog。
 - 2025-10-20: 初版实现完成，具备页眉页脚过滤与标题识别能力，等待集成测试。
+- 2025-10-20: 新增 `tests/test_pdf_cleaner.py` 单元测试覆盖页眉页脚过滤、标题识别与 Unicode 归一化，全部通过。
