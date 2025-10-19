@@ -18,10 +18,6 @@ class _BaseFileReader(BaseCleaner):
         return path.read_text(encoding="utf-8", errors="ignore")
 
 
-class PDFCleaner(_BaseFileReader):
-    """Placeholder PDF cleaner until real implementation is provided."""
-
-
 class HTMLCleaner(_BaseFileReader):
     """Placeholder HTML cleaner until real implementation is provided."""
 

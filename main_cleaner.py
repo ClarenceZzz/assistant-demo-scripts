@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Type
 
-from cleaners import BaseCleaner, HTMLCleaner, MarkdownCleaner, PDFCleaner
+from cleaners import BaseCleaner, HTMLCleaner, MarkdownCleaner, PdfCleaner
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def build_dispatch_table() -> Dict[str, Type[BaseCleaner]]:
     """Return the mapping between file extensions and cleaner classes."""
 
     return {
-        ".pdf": PDFCleaner,
+        ".pdf": PdfCleaner,
         ".html": HTMLCleaner,
         ".htm": HTMLCleaner,
         ".md": MarkdownCleaner,
