@@ -4,13 +4,13 @@
 基于基础框架，实现对 PDF 格式文档的文本清洗功能，包括去除页眉页脚、保留结构信息，并确保编码正确，先预留图片处理逻辑为todo，等待后续拓展。
 
 ## Subtasks
-- [ ] 在项目中添加 `pdfplumber` 作为依赖。
-- [ ] 创建 `PdfCleaner` 类，继承自 `BaseCleaner`。
-- [ ] 实现 `clean` 方法，使用 `pdfplumber` 提取文本和页面元素信息。
-- [ ] 编写逻辑，根据页面坐标（`page.height`, `char.y0`）过滤掉页面顶部和底部 10% 的内容。
-- [ ] 添加逻辑，通过字体大小或加粗等属性识别标题，并在其行首添加 `## `。
-- [ ] 确保所有提取的文本最终都以 UTF-8 编码输出。
-- [ ] 在 `main_cleaner.py` 的分发器中注册 `PdfCleaner` 以处理 `.pdf` 文件。
+- [x] 在项目中添加 `pdfplumber` 作为依赖。
+- [x] 创建 `PdfCleaner` 类，继承自 `BaseCleaner`。
+- [x] 实现 `clean` 方法，使用 `pdfplumber` 提取文本和页面元素信息。
+- [x] 编写逻辑，根据页面坐标（`page.height`, `char.y0`）过滤掉页面顶部和底部 10% 的内容。
+- [x] 添加逻辑，通过字体大小或加粗等属性识别标题，并在其行首添加 `## `。
+- [x] 确保所有提取的文本最终都以 UTF-8 编码输出。
+- [x] 在 `main_cleaner.py` 的分发器中注册 `PdfCleaner` 以处理 `.pdf` 文件。
 
 ## Developer
 - Owner: codex
@@ -35,3 +35,4 @@
 
 ## Notes & Updates
 - 2025-10-19: 任务创建，已放入 Backlog。
+- 2025-10-20: 初版实现完成，具备页眉页脚过滤与标题识别能力，等待集成测试。

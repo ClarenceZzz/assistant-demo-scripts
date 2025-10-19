@@ -1,7 +1,6 @@
 # Kanban Board
 
 ## Backlog
-- T1-2-implement-pdf-cleaner
 - T1-3-implement-html-cleaner
 - T1-4-implement-markdown-cleaner
 - T1-5-process-embedded-images
@@ -14,6 +13,7 @@
 
 ## In Review
 - T1-1-setup-cleaning-framework
+- T1-2-implement-pdf-cleaner
 
 ## Testing / QA
 - _None_
