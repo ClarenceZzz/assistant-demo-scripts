@@ -14,6 +14,7 @@
 ## In Review
 - T1-1-setup-cleaning-framework
 - T1-2-implement-pdf-cleaner
+- T1-2-2-improve-pdf-cleaner-chunk-readiness
 
 ## Testing / QA
 - _None_
