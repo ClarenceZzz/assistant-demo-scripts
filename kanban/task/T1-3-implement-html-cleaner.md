@@ -14,7 +14,7 @@
 - [ ] 在 `main_cleaner.py` 的分发器中注册 `HtmlCleaner` 以处理 `.html` 文件。
 
 ## Developer
-- Owner: [待定]
+- Owner: codex
 - Complexity: M
 
 ## Acceptance Criteria
@@ -33,4 +33,4 @@
 - T1-1-setup-cleaning-framework
 
 ## Notes & Updates
-- 2024-05-21: 任务创建，已放入 Backlog。
+- 2025-10-19: 任务创建，已放入 Backlog。

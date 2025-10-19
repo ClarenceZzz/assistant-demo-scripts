@@ -13,7 +13,7 @@
 - [ ] 建立图片缓存机制，避免重复处理同一张图片（基于图片内容的哈希值）。
 
 ## Developer
-- Owner: [待定]
+- Owner: codex
 - Complexity: L
 
 ## Acceptance Criteria
@@ -36,4 +36,4 @@
 - T1-3-implement-html-cleaner
 
 ## Notes & Updates
-- 2024-05-21: 任务创建，已放入 Backlog。这是一个增强型任务，可以在核心文本清洗功能完成后进行。
+- 2025-10-19: 任务创建，已放入 Backlog。这是一个增强型任务，可以在核心文本清洗功能完成后进行。

@@ -11,7 +11,7 @@
 - [ ] 在 `main_cleaner.py` 的分发器中注册 `MarkdownCleaner` 以处理 `.md` 文件。
 
 ## Developer
-- Owner: [待定]
+- Owner: codex
 - Complexity: S
 
 ## Acceptance Criteria
@@ -31,4 +31,4 @@
 - T1-1-setup-cleaning-framework
 
 ## Notes & Updates
-- 2024-05-21: 任务创建，已放入 Backlog。
+- 2025-10-19: 任务创建，已放入 Backlog。

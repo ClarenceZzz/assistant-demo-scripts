@@ -1,7 +1,7 @@
 # T1-2-implement-pdf-cleaner: 实现 PDF 文件清洗器
 
 ## Goal
-基于基础框架，实现对 PDF 格式文档的文本清洗功能，包括去除页眉页脚、保留结构信息，并确保编码正确。
+基于基础框架，实现对 PDF 格式文档的文本清洗功能，包括去除页眉页脚、保留结构信息，并确保编码正确，先预留图片处理逻辑为todo，等待后续拓展。
 
 ## Subtasks
 - [ ] 在项目中添加 `pdfplumber` 作为依赖。
@@ -13,7 +13,7 @@
 - [ ] 在 `main_cleaner.py` 的分发器中注册 `PdfCleaner` 以处理 `.pdf` 文件。
 
 ## Developer
-- Owner: [待定]
+- Owner: codex
 - Complexity: L
 
 ## Acceptance Criteria
@@ -34,4 +34,4 @@
 - T1-1-setup-cleaning-framework
 
 ## Notes & Updates
-- 2024-05-21: 任务创建，已放入 Backlog。
+- 2025-10-19: 任务创建，已放入 Backlog。
