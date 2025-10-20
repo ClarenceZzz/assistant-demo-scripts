@@ -16,6 +16,7 @@
 - T1-2-2-improve-pdf-cleaner-chunk-readiness
 - T1-3-implement-html-cleaner
 - T1-3-2-improve-html-cleaner-markdown
+- T2-1-implement-recursive-text-splitter
 
 ## Testing / QA
 - _None_
