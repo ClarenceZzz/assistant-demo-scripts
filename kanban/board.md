@@ -3,6 +3,8 @@
 ## Backlog
 - T1-4-implement-markdown-cleaner
 - T1-5-process-embedded-images
+- T2-4-implement-small-chunk-merger
+- T2-5-integrate-chunker-into-ingest-script
 
 ## To Do
 - _None_
