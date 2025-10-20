@@ -79,7 +79,7 @@ def test_html_cleaner_renders_lists_and_tables(tmp_path: Path) -> None:
     lines = [line.strip() for line in result.splitlines() if line.strip()]
 
     assert "## Steps" in lines
-    assert "- Install guide (https://example.com/guide)" in result
+    assert "- Install [guide](https://example.com/guide)" in result
     assert "- Run tests" in result
     assert "### Checklist" in lines
     assert any(line.startswith("1. First") for line in lines)
@@ -150,3 +150,27 @@ def test_html_cleaner_outputs_markdown_shape(tmp_path: Path) -> None:
     assert all(line.count("|") >= 3 for line in table_lines)
     paragraphs = [line for line in lines if not line.startswith("#") and not line.startswith("|")]
     assert paragraphs[:2] == ["内容一。", "内容二。"]
+
+
+def test_html_cleaner_cleans_real_product_article() -> None:
+    cleaner = HtmlCleaner()
+    result = cleaner.clean("data/raw/产品测评_OG-8598Plus_20251020.html")
+    lines = result.splitlines()
+
+    assert lines
+    assert lines[0].startswith("# ")
+    assert "奥佳华 OG-8598Plus 按摩椅怎么样" in lines[0]
+    assert "\ufeff" not in result
+    assert lines[1] == ""
+
+    paragraph_count = sum(
+        1
+        for line in lines
+        if line
+        and not line.startswith("#")
+        and not line.startswith("|")
+        and not line.startswith("- ")
+    )
+    assert paragraph_count >= 4
+    assert any("https://union-click.jd.com" in line for line in lines)
+    assert "" in lines  # ensure blank line separates paragraphs

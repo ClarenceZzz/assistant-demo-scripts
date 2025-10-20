@@ -178,8 +178,9 @@ class HtmlCleaner(BaseCleaner):
         self._render_children(root, lines, indent=0)
 
         compacted = self._compact_lines(lines)
-        normalized = unicodedata.normalize("NFKC", "\n".join(compacted)).strip()
-        return normalized
+        ensured = self._ensure_heading(soup, compacted)
+        normalized = unicodedata.normalize("NFKC", "\n".join(ensured)).strip()
+        return self._strip_bom(normalized)
 
     def _parse_html(self, html_content: str) -> Union[SimpleDocument, BeautifulSoup]:
         """Parse HTML content returning either BeautifulSoup or fallback tree."""
@@ -365,10 +366,12 @@ class HtmlCleaner(BaseCleaner):
                     anchor_text = self._collect_inline_text(child)
                     href = child.get("href", "").strip()
                     if anchor_text:
-                        if href and href != anchor_text:
-                            parts.append(f"{anchor_text} ({href})")
+                        if href:
+                            parts.append(self._format_link(anchor_text, href))
                         else:
                             parts.append(anchor_text)
+                    elif href:
+                        parts.append(self._format_link(href, href))
                     continue
                 nested = self._collect_inline_text(child)
                 if nested:
@@ -382,6 +385,17 @@ class HtmlCleaner(BaseCleaner):
                     continue
                 if name in {"ul", "ol", "table"}:
                     continue
+                if name == "a":
+                    anchor_text = self._collect_inline_text(child)
+                    href = child.get("href", "") or ""
+                    if anchor_text:
+                        if href:
+                            parts.append(self._format_link(anchor_text, href))
+                        else:
+                            parts.append(anchor_text)
+                    elif href:
+                        parts.append(self._format_link(href, href))
+                    continue
                 nested = self._collect_inline_text(child)
                 if nested:
                     parts.append(nested)
@@ -392,12 +406,12 @@ class HtmlCleaner(BaseCleaner):
         text = re.sub(r"[ \t\f\v]+", " ", text)
         text = re.sub(r" ?\n ?", "\n", text)
         text = re.sub(r"\n{3,}", "\n\n", text)
-        return text.strip()
+        return self._strip_bom(text).strip()
 
     def _emit_block(self, lines: List[str], content: str) -> None:
         """Emit a block-level line ensuring separation from surrounding text."""
 
-        content = content.strip()
+        content = self._strip_bom(content).strip()
         if not content:
             return
         if lines and lines[-1] != "":
@@ -417,7 +431,7 @@ class HtmlCleaner(BaseCleaner):
         result: List[str] = []
         previous_blank = True
         for raw_line in lines:
-            line = raw_line.rstrip()
+            line = self._strip_bom(raw_line).rstrip()
             if not line:
                 if not previous_blank:
                     result.append("")
@@ -437,7 +451,7 @@ class HtmlCleaner(BaseCleaner):
     def _normalize_inline_text(self, text: str) -> str:
         """Normalize inline string segments while preserving explicit newlines."""
 
-        text = text.replace("\r", "")
+        text = self._strip_bom(text.replace("\r", ""))
         text = re.sub(r"[ \t\f\v]+", " ", text)
         return text
 
@@ -468,6 +482,82 @@ class HtmlCleaner(BaseCleaner):
                 self._strip_comments(child)
             filtered_children.append(child)
         node.children = filtered_children
+
+    def _strip_bom(self, text: str) -> str:
+        """Remove UTF-8 BOM characters from the provided text."""
+
+        return text.replace("\ufeff", "")
+
+    def _format_link(self, text: str, href: str) -> str:
+        """Return a Markdown formatted link."""
+
+        label = self._strip_bom(text.strip())
+        url = href.strip()
+        if not url:
+            return label
+        if not label:
+            return f"<{url}>"
+        if label == url:
+            return f"<{url}>"
+        return f"[{label}]({url})"
+
+    def _ensure_heading(
+        self,
+        root: Union[SimpleDocument, BeautifulSoup],
+        lines: List[str],
+    ) -> List[str]:
+        """Ensure output begins with a Markdown heading derived from content or title."""
+
+        if not lines:
+            return lines
+
+        first_index: Optional[int] = None
+        for idx, line in enumerate(lines):
+            if line.strip():
+                first_index = idx
+                break
+
+        if first_index is None:
+            return lines
+
+        if lines[first_index].lstrip().startswith("#"):
+            return lines
+
+        heading_text = ""
+        for candidate in self._find_all(root, {"h1"}):
+            heading_text = self._strip_bom(self._collect_inline_text(candidate))
+            if heading_text:
+                break
+        if not heading_text:
+            for candidate in self._find_all(root, {"title"}):
+                heading_text = self._strip_bom(self._collect_inline_text(candidate))
+                if heading_text:
+                    break
+
+        if heading_text:
+            for delimiter in ("|", "｜"):
+                if delimiter in heading_text:
+                    parts = [part.strip(" -—") for part in heading_text.split(delimiter) if part.strip()]
+                    if parts:
+                        heading_text = parts[-1]
+        else:
+            return lines
+
+        first_line = self._strip_bom(lines[first_index].strip())
+
+        if not heading_text:
+            return lines
+
+        if heading_text == first_line:
+            lines[first_index] = f"# {heading_text}"
+        else:
+            lines.insert(0, f"# {heading_text}")
+            first_index = 0
+
+        insert_index = first_index + 1
+        if insert_index >= len(lines) or lines[insert_index] != "":
+            lines.insert(insert_index, "")
+        return lines
 
 
 HTMLCleaner = HtmlCleaner

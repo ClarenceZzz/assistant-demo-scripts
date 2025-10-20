@@ -38,4 +38,5 @@
 - 2025-10-20: 验收时发现 Markdown 输出结构仍不符合规范且对分块不友好，拆分出后续迭代任务 `T1-3-2`.
 
 ## Testing / QA
-- QA 结论：当前 HtmlCleaner 输出虽带 Markdown 标记，但 `<br>` / 多段内容被压缩为单行，列表项与段落缺少适当换行/缩进，导致 Markdown 渲染异常。同时文本块被压扁，后续向量化难以按自然段落或列表边界分块，语义完整性受损。需通过 `T1-3-2` 任务修复 Markdown 结构及分块友好度。
+- 2025-10-20（初次验收）：当前 HtmlCleaner 输出虽带 Markdown 标记，但 `<br>` / 多段内容被压缩为单行，列表项与段落缺少适当换行/缩进，导致 Markdown 渲染异常。同时文本块被压扁，后续向量化难以按自然段落或列表边界分块，语义完整性受损（尤其在 `/data/raw/产品测评_OG-8598Plus_20251020.html` 上表现明显），需通过 `T1-3-2` 修复。
+- 2025-10-20（阶段 2 完成）：`T1-3-2` 引入标题提取、Markdown 链接以及换行保留逻辑，`python3 -m pytest tests/test_html_cleaner.py tests/test_pdf_cleaner.py` 与 `python3 main_cleaner.py --input-file data/raw/产品测评_OG-8598Plus_20251020.html` 均通过；输出满足 Markdown 结构与分块友好度要求。
