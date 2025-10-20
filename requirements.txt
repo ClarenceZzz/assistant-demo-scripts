@@ -1,1 +1,2 @@
 pdfplumber>=0.11,<0.12
+beautifulsoup4>=4.12,<5
