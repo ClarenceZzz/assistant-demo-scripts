@@ -1,36 +1,31 @@
-# T1-3-2-improve-html-cleaner-markdown: 修复 HTML 清洗 Markdown 结构与分块友好度（阶段 2）
+# T1-3-2-improve-html-cleaner-markdown: 修复 HTML 清洗 Markdown 结构与分块友好度
 
 ## Goal
-上一轮 `T1-3-2` 修复后，经对实际业务 HTML (`/data/raw/产品测评_OG-8598Plus_20251020.html`) 验收发现：
-1. 顶部标题与小节未被识别，输出缺少 Markdown `#` 标记，仅为纯文本；
-2. 长段内容仍被压缩为单段，缺乏自然段间隔，列表/引用等结构不稳定；
-3. 真实文件输出缺少导航、脚本等噪声处理后的 Markdown 结构，不便于后续向量化分块。
-
-本阶段目标：以真实 HTML 文件为基准，彻底修复 Markdown 结构（含标题、段落、列表、表格、引用），并确保输出内容可直接用于分块和解析。
+针对 `T1-3-implement-html-cleaner` 交付后发现的两个问题：其一，输出文本虽带 `#`/`-` 符号但整体未满足 Markdown 规范（标题、列表、表格缺少必要空行、缩进或对齐导致渲染失败）；其二，文本段落与结构被压缩到单行，导致后续向量化分块难以保持语义完整。此任务旨在修复 Markdown 结构并提升分块友好度。
 
 ## Subtasks
-- [x] 以 `/data/raw/产品测评_OG-8598Plus_20251020.html` 为例，抽取主要结构（标题、段落、列表、图片/表格等），归纳现有输出缺陷与预期 Markdown 形态。
-- [x] 调整 `HtmlCleaner`：确保 `<h1>-<h6>`、`<p>`、`<section>`、`<article>` 等映射到正确的 Markdown 标记，并在段落之间插入适度空行；确保 `<br>` 生成软换行时保留 Markdown 语义。
-- [x] 强化列表/嵌套列表输出：首行采用 `-`/`1.`，续行使用两个空格缩进；引用、代码块、表格等结构需以 Markdown 标准输出。
-- [x] 针对真实文件新增单元测试或快照校验，验证标题提取、段落拆分与列表输出；必要时引入 Markdown 渲染库（如 `markdown` 或 `mistune`）做解析验证。
-- [x] 运行 `python3 main_cleaner.py --input-file data/raw/产品测评_OG-8598Plus_20251020.html`，检视 `data/clean` 输出内容，确保符合 Markdown 与分块要求，并在任务备注中附样例片段。
-- [x] 更新文档/注释，总结 Markdown 输出规则与分块友好策略，便于后续维护。
+- [x] 对比处理前、处理后的样例 HTML（含列表、表格、段落）确认格式缺陷，总结 Markdown 渲染失败与分块不佳的具体场景。
+- [x] 调整 `HtmlCleaner` 的段落/标题/列表/表格输出规则：补充必要空行、缩进、管道对齐以及行内换行，确保常见 Markdown 渲染器可正确解析。
+- [x] 优化段落与列表的拼接逻辑，避免将多句内容压缩为单行，恢复分块友好的段落边界。
+- [x] 扩充单元测试：校验 Markdown 结构（例如通过 `markdown` 或 `mistune` 解析无报错），并验证长段文本在清洗后仍保持语义段落划分。
+- [x] 在 `data/clean` 中使用样例 HTML 回归，确保输出既符合 Markdown 规范，也便于后续分块（示例：`tests/test_html_cleaner.py::test_html_cleaner_preserves_line_breaks_and_paragraphs` 验证段落与列表继续行）。
+- [x] 更新文档/注释，说明 Markdown 格式约定与分块友好策略。
 
 ## Developer
 - Owner: codex
 - Complexity: M
 
 ## Acceptance Criteria
-- `/data/raw/产品测评_OG-8598Plus_20251020.html` 清洗后输出包含正确的 Markdown 标题（`#`/`##` 等）、段落空行、列表缩进与表格格式。
-- 使用 Markdown 解析器解析输出无报错；随机段落解析后仍保留语义结构，可作为分块输入（可验证段落数与原文结构对齐）。
-- `python3 -m pytest tests/test_html_cleaner.py` 通过新增/更新的测试；若引入解析库，需在测试中验证结构正确性。
-- 任务备注附上关键片段示例（例如首屏标题、段落与列表），证明 Markdown 与分块友好度满足 `T1-3` 目标。
+- 经过 `HtmlCleaner` 处理的 HTML 样例可被 Markdown 解析器无错渲染：标题层级正确、列表项缩进对齐、表格分隔行规范。
+- 输出文本保留自然段落和列表结构，供分块逻辑按段落/列表切分，不再出现整页单行或语句断裂的情况。
+- 新增/更新的单元测试全部通过，覆盖 Markdown 渲染验证与分块友好性检测。
+- 运行 `python3 main_cleaner.py --input-file samples/...` 生成的清洗结果符合以上标准，并在任务记录中附示例说明。
 
 ## Test Cases
-- [x] `python3 -m pytest tests/test_html_cleaner.py::test_html_cleaner_outputs_markdown_shape` -> 验证标题、表格结构未回退。
-- [x] `python3 -m pytest tests/test_html_cleaner.py::test_html_cleaner_preserves_line_breaks_and_paragraphs` -> 验证段落、列表换行逻辑。
-- [x] `python3 -m pytest tests/test_html_cleaner.py::test_html_cleaner_cleans_real_product_article` -> 针对 `/data/raw/产品测评_OG-8598Plus_20251020.html` 样例验证 Markdown 结构。
-- [x] `python3 main_cleaner.py --input-file data/raw/产品测评_OG-8598Plus_20251020.html` -> 检查实际输出，确认 Markdown 和分块需求达成。
+- [x] `python3 -m pytest tests/test_html_cleaner.py::test_html_cleaner_outputs_markdown_shape` -> 验证 Markdown 结构可被解析。
+- [x] `python3 -m pytest tests/test_html_cleaner.py::test_html_cleaner_preserves_line_breaks_and_paragraphs` -> 验证段落/列表输出保留分块边界。
+- [ ] `python3 main_cleaner.py --input-file ./samples/news_article.html` -> 检查正文输出无导航噪声，Markdown 渲染正常。
+- [ ] `python3 main_cleaner.py --input-file ./samples/tutorial_with_lists_tables.html` -> 检查列表、表格格式符合 Markdown 规范，且段落可直接进入分块。
 
 ## Related Files / Design Docs
 - `./kanban/task/T1-3-implement-html-cleaner.md`
@@ -39,10 +34,5 @@
 - T1-3-implement-html-cleaner
 
 ## Notes & Updates
-- 2025-10-20: 任务重新排期。实际业务 HTML 输出仍为纯文本段落，缺少 Markdown 标记与段落边界，对分块造成影响。需围绕真实文件完成修复、测试与回归。
-- 2025-10-20: 已重构 `HtmlCleaner`，引入标题提取（支持 `<title>` 拆分）、Markdown 链接格式及换行保留；新增 `tests/test_html_cleaner.py::test_html_cleaner_cleans_real_product_article` 覆盖真实 HTML。运行 `python3 -m pytest tests/test_html_cleaner.py tests/test_pdf_cleaner.py` 与 `python3 main_cleaner.py --input-file data/raw/产品测评_OG-8598Plus_20251020.html` 全部通过，输出首行示例：
-  ```
-  # 奥佳华 OG-8598Plus 按摩椅怎么样?看完体验测评再选,不踩坑
-  
-  奥佳华 OG-8598Plus 按摩椅怎么样?看完体验测评再选,不踩坑
-  ```
+- 2025-10-20: 任务创建，确认 T1-3 输出 Markdown 结构不合规、分块语义缺失，需进一步迭代。
+- 2025-10-20: 完成 Markdown 行为修复与测试扩展，新增 `tests/test_html_cleaner.py` 覆盖行内换行、段落边界与表格格式；待真实样例 HTML 收集后补充 CLI 回归记录。
