@@ -15,6 +15,7 @@
 - T1-2-implement-pdf-cleaner
 - T1-2-2-improve-pdf-cleaner-chunk-readiness
 - T1-3-implement-html-cleaner
+- T1-3-2-improve-html-cleaner-markdown
 
 ## Testing / QA
 - _None_

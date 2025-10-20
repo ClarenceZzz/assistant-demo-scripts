@@ -249,9 +249,8 @@ class HtmlCleaner(BaseCleaner):
             if content:
                 self._emit_block(lines, content)
             # Also render nested structures such as lists or tables.
-            for nested in tag.find_all(["ul", "ol", "table"], recursive=False):
-                if isinstance(nested, Tag):
-                    self._render_tag(nested, lines, indent)
+            for nested in self._find_all(tag, {"ul", "ol", "table"}, recursive=False):
+                self._render_tag(nested, lines, indent)
 
     def _emit_list(self, tag: Tag, lines: List[str], indent: int, *, ordered: bool) -> None:
         """Render unordered/ordered lists."""
@@ -266,9 +265,22 @@ class HtmlCleaner(BaseCleaner):
         for item in items:
             content = self._collect_inline_text(item)
             prefix = f"{counter}. " if ordered else "- "
-            line_prefix = "  " * indent + prefix
+            list_indent = "  " * indent
+            line_prefix = f"{list_indent}{prefix}"
             if content:
-                lines.append(f"{line_prefix}{content}")
+                content_lines = content.split("\n")
+                first = content_lines[0].strip()
+                if first:
+                    lines.append(f"{line_prefix}{first}")
+                else:
+                    lines.append(line_prefix.rstrip())
+                continuation_indent = f"{list_indent}  "
+                for continuation in content_lines[1:]:
+                    continuation = continuation.strip()
+                    if continuation:
+                        lines.append(f"{continuation_indent}{continuation}")
+            else:
+                lines.append(line_prefix.rstrip())
             nested_lists = self._find_all(item, {"ul", "ol"}, recursive=False)
             for nested in nested_lists:
                 self._emit_list(
@@ -337,7 +349,7 @@ class HtmlCleaner(BaseCleaner):
         parts: List[str] = []
         for child in getattr(node, "children", []):
             if isinstance(child, (NavigableString, str)):
-                text = self._normalize_whitespace(str(child))
+                text = self._normalize_inline_text(str(child))
                 if text:
                     parts.append(text)
             elif isinstance(child, Tag):
@@ -373,9 +385,14 @@ class HtmlCleaner(BaseCleaner):
                 nested = self._collect_inline_text(child)
                 if nested:
                     parts.append(nested)
-        text = " ".join(part for part in parts if part and part != "\n")
-        text = re.sub(r"\s+", " ", text).strip()
-        return text
+        text = "".join(parts)
+        if not text:
+            return ""
+        text = text.replace("\r", "")
+        text = re.sub(r"[ \t\f\v]+", " ", text)
+        text = re.sub(r" ?\n ?", "\n", text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text.strip()
 
     def _emit_block(self, lines: List[str], content: str) -> None:
         """Emit a block-level line ensuring separation from surrounding text."""
@@ -416,6 +433,13 @@ class HtmlCleaner(BaseCleaner):
         """Normalize whitespace within inline content."""
 
         return re.sub(r"\s+", " ", text)
+
+    def _normalize_inline_text(self, text: str) -> str:
+        """Normalize inline string segments while preserving explicit newlines."""
+
+        text = text.replace("\r", "")
+        text = re.sub(r"[ \t\f\v]+", " ", text)
+        return text
 
     def _find_all(
         self,

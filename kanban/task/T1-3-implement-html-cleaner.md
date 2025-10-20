@@ -35,3 +35,7 @@
 ## Notes & Updates
 - 2025-10-19: 任务创建，已放入 Backlog。
 - 2025-10-20: 完成 HtmlCleaner 实现与单元测试，列表/表格转换覆盖到 `tests/test_html_cleaner.py`，并兼容无 `beautifulsoup4` 环境的轻量解析回退。
+- 2025-10-20: 验收时发现 Markdown 输出结构仍不符合规范且对分块不友好，拆分出后续迭代任务 `T1-3-2`.
+
+## Testing / QA
+- QA 结论：当前 HtmlCleaner 输出虽带 Markdown 标记，但 `<br>` / 多段内容被压缩为单行，列表项与段落缺少适当换行/缩进，导致 Markdown 渲染异常。同时文本块被压扁，后续向量化难以按自然段落或列表边界分块，语义完整性受损。需通过 `T1-3-2` 任务修复 Markdown 结构及分块友好度。
