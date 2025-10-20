@@ -17,6 +17,8 @@
 - T1-3-implement-html-cleaner
 - T1-3-2-improve-html-cleaner-markdown
 - T2-1-implement-recursive-text-splitter
+- T2-2-implement-semantic-splitter
+- T2-3-build-chunking-pipeline
 
 ## Testing / QA
 - _None_
