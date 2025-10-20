@@ -9,8 +9,8 @@
 - [ ] 在 `chunk` 方法中，首先调用 `SemanticSplitter` 进行初步分割。
 - [ ] 遍历语义块，检查每个块的长度。如果超过 `CHUNK_SIZE`，则调用 `RecursiveTextSplitter` 对其进行二次切分。
 - [ ] 创建一个私有辅助方法 `_generate_section_title(chunk_content)`：
-    - [ ] 在该方法内，设计一个高效的Prompt，例如：“`为以下文本生成一个不超过10个字的简短总结作为标题：\n\n{text}`”。
-    - [ ] 调用一个小型、快速的LLM（DashScope的`qwen-turbo`）来执行生成任务。
+    - [ ] 在该方法内，设计一个高效的Prompt，例如：“`为以下文本块生成一个不超过10个字的简短总结作为高质量、概括性的section元数据，只能返回标题，不能包含其他内容：\n\n{text}`”。
+    - [ ] 调用外部模型来执行生成任务，参考 `data/api.md` 内的请求和响应，测试时使用 apikey:sk-fvkljvsojrgknsnqftkpnjoxfqvjijitspsvalywcfblvhim，创建配置文件保存，调用时读取
     - [ ] 实现对LLM调用的错误处理和超时机制，失败时返回一个默认值（如空字符串）。
 - [ ] 在主流程中，为每个最终生成的块（按其在原文中的顺序）：
     - [ ] 检查其 `metadata` 中是否已有从标题行继承的 `section`。
