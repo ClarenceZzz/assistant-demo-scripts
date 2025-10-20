@@ -1,7 +1,7 @@
 # T1-3-implement-html-cleaner: 实现 HTML 文件清洗器
 
 ## Goal
-基于基础框架，实现对 HTML 格式文档的文本清洗功能，去除脚本、样式等噪声，并将有用的结构化信息转换为 Markdown 格式。
+基于基础框架，实现对 HTML 格式文档的文本清洗功能，去除脚本、样式等噪声，并将有用的结构化信息转换为 Markdown 格式，先预留图片处理逻辑为todo，等待后续拓展。
 
 ## Subtasks
 - [ ] 在项目中添加 `beautifulsoup4` 作为依赖。

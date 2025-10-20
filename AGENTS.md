@@ -2,12 +2,19 @@
 
 ## 看板工作流
 
-本项目使用看板工作流进行任务管理，请严格遵守以下规范。
+本项目使用看板工作流进行任务管理，请严格遵守以下规范:
 
-阅读 ./docs/PRD.md 了解项目背景和需求。
+- 项目背景和需求记录在 ./docs/PRD.md，不可修改。
+- Kanban 数据记录在 `./kanban/` 目录（Markdown 格式）下。
+- `./kanban/board.md` 负责维护整个项目的所有任务状态。
+- `./kanban/task/` 目录下存放每个任务的详细描述（Markdown）, 每个任务一个文件，文件名为任务 ID，例如 `T1-1-setup-cleaning-framework.md`。任务文件内不但要记录任务描述，还要记录开发过程中遇到的问题与解决方案、BUG 记录、Review 意见等。
 
-统一 Kanban 看板列（项目级）：
+任务开始前请检查 ./kanban/ 目录：
+- 如果不存在，请根据 PRD 或遵照用户本次的指示，创建初始看板和任务文件。
+- 如果存在，请根据看板上的任务状态，继续推进任务，或遵照用户本次的指示进行工作。
 
+### 看板状态文件（board.md ）
+状态包含：
 * **Backlog**（需求池）
 * **To Do**（当前周期待办）
 * **In Progress**（开发中）
@@ -15,41 +22,32 @@
 * **Testing / QA**（QA 测试中）
 * **Blocked**（阻塞）
 * **Done**（验收通过）
-
-> 每个任务卡必须包含：目标、子任务、开发者、估算复杂度（S/M/L）、验收标准、测试用例、相关文件/设计稿、依赖任务。
-
-## 任务状态定义（严格）
-
+任务状态定义（严格）:
+* **同一个任务 ID 只能处于一种任务状态中**
 * **In Progress**：除了完成任务外，还需包含单元测试（若适用）。
 * **In Review**：PR 描述需写清修改点、运行方式、影响面、回归风险；至少 1 名审查者通过（由你切换身份扮演）。
 * **Testing / QA**：QA 按测试用例执行，记录 BUG，BUG 分级（P0/P1/P2）。所有 P0 必须解决，P1 需评估。QA 完成后 QA 在卡片上写“QA Passed”（由你切换身份扮演）。
 * **Done**：产品经理或维护者对接收准则（Acceptance Criteria）进行最终验收，若通过，移动卡片到 Done。（由你切换身份扮演）
 
-Kanban 数据记录在 `./kanban/` 目录（Markdown 格式）.
-- `./kanban/board.md` 维护看板状态。
-- `./kanban/task/` 目录存放每个任务的详细描述（Markdown）, 每个任务一个文件，文件名为任务 ID，例如 `A-1-initialize-repo.md`。此文件内不但要记录任务描述，还要记录开发过程中遇到的问题与解决方案、BUG 记录、Review 意见等。
+### 任务文件（e.g. T1-1-setup-cleaning-framework.md）
 
----
+> 每个任务卡必须包含：目标、子任务、开发者、估算复杂度（S/M/L）、验收标准、测试用例、相关文件/设计稿、依赖任务。
 
-请检查 ./kanban/ 目录：
-- 如果不存在，请根据 PRD 创建初始看板和任务文件。
-- 如果存在，请根据看板上的任务状态，继续推进任务，或遵照用户本次的指示进行工作。
-
+文件包含：
+* **Goal**（任务目标）
+* **Subtasks**（子任务，定义了分步实现任务目标的过程，在执行过程中视情况，你可以创建更细粒度的子任务，但不用更新到任务文件中）
+* **Developer**（开发者、任务复杂度等信息）
+* **Acceptance Criteria**（任务验收标准）
+* **Test Cases**（测试用例，记录测试用例和用例描述，可能为空或不全面，在测试过程中视情况，增加测试用例更新到这里）
+* **Related Files / Design Docs**（任务关联的设计文档、看板文档或其他文档）
+* **Dependencies**（前置任务项或依赖任务项）
+* **Notes & Updates**（任务状态更新日志、任务备注或 Review 意见）
 
 ## 代码规范
 
-1.  [Git 工作流](#1-git-工作流)
-2.  [编码规范](#2-编码规范)
-3.  [测试规范](#3-测试规范)
-4.  [依赖管理](#4-依赖管理)
-5.  [代码审查流程](#5-代码审查流程)
-6.  [文档规范](#6-文档规范)
-
----
-
 ### 1. Git 工作流
 
-我们采用基于功能分支（Feature Branch）的工作流，分支不一定预先创建好，缺少时由你创建
+我们采用基于功能分支（Feature Branch）的工作流，开发前先切换到对应分支，**严禁**在生产分支上直接修改和提交。分支不一定预先创建好，缺少时由你从主干分支创建。
 
 -   **主分支**:
     -   `main`: 生产分支，始终保持稳定和可部署状态。只接受来自 `develop` 分支的合并。
@@ -61,13 +59,20 @@ Kanban 数据记录在 `./kanban/` 目录（Markdown 格式）.
     -   文档: `docs/<topic>` (e.g., `docs/update-readme`)
 -   **提交信息 (Commit Message)**:
     -   我们遵循 **Conventional Commits** 规范。
-    -   格式: `<type>(<scope>): <subject>`
-    -   **Type**: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`
-    -   **Scope** (可选): 影响的模块，如 `ingest`, `chunking`, `embedding`, `db`
+    -   建议格式: `<type>(<scope>): <subject>
+              [optional body]
+              [optional footer(s)]`
+    -   **Type**: 本次提交的类型（如 `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore` 等）
+    -   **Scope** (可选): 本次更改影响的范围或模块，如 `ingest`, `chunking`, `embedding`, `db`
+    -   **description**：简要描述更改内容
+    -   **body**（可选）：详细描述
+    -   **footer**（可选）：BREAKING CHANGE 或关联 issue
     -   **示例**:
+        -   `docs: correct spelling of CHANGELOG`
         -   `feat(ingest): add support for parsing markdown files`
         -   `fix(db): resolve race condition in upsert logic`
         -   `test(chunking): add unit tests for recursive text splitter`
+        -   `chore: update dependencies`
 
 ### 2. 编码规范
 
@@ -94,7 +99,7 @@ Kanban 数据记录在 `./kanban/` 目录（Markdown 格式）.
     -   非敏感配置（如分块大小、模型名称）应存放在独立的配置文件中（如 `configs/ingest.yaml`），并通过配置加载器读取。
 -   **日志 (Logging)**:
     -   使用 Python 内置的 `logging` 模块，而不是 `print()`。
-    -   在关键步骤记录信息，如：开始处理哪个文档、生成了多少个 Chunks、成功写入多少条记录。
+    -   **必须**在关键步骤记录信息，如：开始处理哪个文档、生成了多少个 Chunks、成功写入多少条记录。
     -   错误日志应包含足够的回溯信息（Traceback）以供排查。
     -   日志级别：`INFO` 用于关键流程节点，`DEBUG` 用于开发调试，`WARNING` 用于可恢复的异常，`ERROR` 用于导致当前任务失败的严重问题。
 
@@ -131,7 +136,7 @@ Kanban 数据记录在 `./kanban/` 目录（Markdown 格式）.
     -   `requirements-dev.txt`: 开发和测试所需的额外依赖（如 `pytest`, `black`, `mypy`）。
 -   务必使用 `pip freeze` 等工具锁定依赖版本，以保证环境的一致性。
 
-### 5. 代码审查流程 (Pull Request)
+### 5. 代码提交流程 (Pull Request)
 
 1.  从 `develop` 分支创建你的功能分支。
 2.  完成开发和测试后，确保所有本地测试通过 (`pytest`)。
