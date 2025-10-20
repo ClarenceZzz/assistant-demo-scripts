@@ -53,6 +53,7 @@ class Chunker:
     semantic_splitter: SemanticSplitter = field(default_factory=SemanticSplitter)
     recursive_splitter: RecursiveTextSplitter = field(init=False)
     _api_config_cache: Optional[Dict[str, Any]] = field(default=None, init=False)
+    _llm_available: bool = field(default=True, init=False)
 
     def __post_init__(self) -> None:
         self.recursive_splitter = RecursiveTextSplitter(
@@ -93,8 +94,18 @@ class Chunker:
                 heading=heading,
             )
 
-            for segment in block_segments:
-                section = base_section or self._generate_section_title(segment)
+            for segment_index, segment in enumerate(block_segments):
+                section = ""
+                if segment_index == 0 and base_section:
+                    section = base_section
+                else:
+                    section = self._generate_section_title(segment)
+                    if not section:
+                        section = self._fallback_section_title(
+                            segment,
+                            base_section=base_section,
+                            segment_index=segment_index,
+                        )
                 metadata = {
                     "title": title,
                     "section": section,
@@ -141,6 +152,9 @@ class Chunker:
     def _generate_section_title(self, chunk_content: str) -> str:
         """Generate a short section title using the configured LLM."""
 
+        if not self._llm_available:
+            return ""
+
         config = self._load_api_config()
         if not config:
             return ""
@@ -180,9 +194,35 @@ class Chunker:
             response.raise_for_status()
         except (RequestException, ValueError) as exc:
             logger.warning("LLM section title generation failed: %s", exc)
+            self._llm_available = False
             return ""
 
         return self._extract_content_from_response(response)
+
+    def _fallback_section_title(
+        self,
+        chunk_content: str,
+        *,
+        base_section: str,
+        segment_index: int,
+    ) -> str:
+        """Generate a deterministic fallback title when LLM is unavailable."""
+
+        if segment_index == 0 and base_section:
+            return base_section
+
+        cleaned = chunk_content.strip()
+        if not cleaned and base_section:
+            return base_section
+
+        first_line = cleaned.splitlines()[0] if cleaned else ""
+        fallback = first_line.lstrip("# ").strip()
+        if not fallback:
+            fallback = base_section
+
+        if fallback:
+            return fallback[:10]
+        return ""
 
     def _extract_content_from_response(self, response: Response) -> str:
         """Parse title text from LLM response."""
@@ -191,6 +231,7 @@ class Chunker:
             data = response.json()
         except (ValueError, json.JSONDecodeError) as exc:
             logger.warning("Invalid LLM response format: %s", exc)
+            self._llm_available = False
             return ""
 
         try:
@@ -204,6 +245,7 @@ class Chunker:
             return content.strip()
         except (KeyError, TypeError):
             logger.warning("Missing expected fields in LLM response.")
+            self._llm_available = False
             return ""
 
     def _load_api_config(self) -> Optional[Dict[str, Any]]:

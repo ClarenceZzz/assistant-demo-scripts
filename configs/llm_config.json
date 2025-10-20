@@ -1,6 +1,6 @@
 {
   "base_url": "https://api.siliconflow.cn/v1/chat/completions",
-  "model": "Qwen/Qwen3-32B",
+  "model": "Qwen/Qwen3-8B",
   "api_key": "sk-fvkljvsojrgknsnqftkpnjoxfqvjijitspsvalywcfblvhim",
-  "timeout": 8.0
+  "timeout": 60.0
 }

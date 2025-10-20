@@ -51,3 +51,5 @@
 - 2025-10-20: 任务更新。明确了最终输出的 `JSONL` 中 `metadata` 必须包含 `title`, `section`, `chunk_index`，并更新了相关子任务。
 - 2025-10-20: 完成 `Chunker` 管线与 LLM 标题生成；配置存于 `configs/llm_config.json`，`PYTHONPATH=. pytest tests/test_chunker.py` 全部通过。
 - 2025-10-20: 使用 `data/clean/` 文档生成 `mock/chunker/*.jsonl`，分别得到 10 个与 31 个分块，输出含完整元数据结构。
+- 2025-10-20: 修复 `section` 重复问题：除首段外强制调用 LLM，若网络超时则降级为本地摘要；`PYTHONPATH=. pytest tests/test_chunker.py` 复测通过，mock 输出已刷新。更新 LLM 模型(`Qwen/Qwen3-8B`)与 15s 超时后，仍遇网络超时并触发本地兜底。
+- 2025-10-20: 将 LLM 接口超时调整为 60s 再次跑 `mock/chunker`，首个无标题块仍触发 60s 超时，其后均走本地摘要；整体生成完成但耗时约 215s。

@@ -56,7 +56,13 @@ def test_chunking_pipeline_complex_doc(monkeypatch: pytest.MonkeyPatch) -> None:
     assert [
         chunk["chunk_id"] for chunk in result
     ] == [f"DOC001-{idx}" for idx in range(len(result))]
-    assert calls == []  # headings should avoid LLM calls
+    assert calls  # recursive splits should trigger LLM for overflow segments
+    assert any(
+        chunk["metadata"]["section"] == "深度解析" for chunk in result
+    ), "First segment of heading should retain original title"
+    assert any(
+        chunk["metadata"]["section"] == "自动摘要" for chunk in result
+    ), "Overflow segments should receive generated titles"
 
 
 def test_chunking_pipeline_output_format(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -110,4 +116,4 @@ def test_chunking_pipeline_llm_failure_returns_empty_section(
         metadata_base={"title": "异常测试"},
     )
 
-    assert result[0]["metadata"]["section"] == ""
+    assert result[0]["metadata"]["section"] == "另一个无标题段落。"
