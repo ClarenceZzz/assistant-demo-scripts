@@ -242,7 +242,16 @@ class HtmlCleaner(BaseCleaner):
                 self._emit_block(lines, "\n".join(table_lines))
         elif name in {"br"}:
             self._emit_blank_line(lines)
-        elif name in {"div", "section", "article", "main", "body"}:
+        elif name == "a":
+            content = self._collect_inline_text(tag)
+            href = (tag.get("href") or "").strip() if hasattr(tag, "get") else ""
+            if content and href:
+                self._emit_block(lines, self._format_link(content, href))
+            elif content:
+                self._emit_block(lines, content)
+            elif href:
+                self._emit_block(lines, self._format_link(href, href))
+        elif name in {"div", "section", "article", "main", "body"} or name.startswith("sr-"):
             self._render_children(tag, lines, indent)
         else:
             # Default behaviour: attempt to render inline content.
@@ -387,7 +396,7 @@ class HtmlCleaner(BaseCleaner):
                     continue
                 if name == "a":
                     anchor_text = self._collect_inline_text(child)
-                    href = child.get("href", "") or ""
+                    href = (child.attrs.get("href") or "").strip()
                     if anchor_text:
                         if href:
                             parts.append(self._format_link(anchor_text, href))
