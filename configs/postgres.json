@@ -1,5 +1,5 @@
 {
-  "dsn": "postgresql://postgres:zAzHHplnxXb7QvT02QMl0oPV@localhost:5432/postgres",
+  "dsn": "postgresql://postgres:zAzHHplnxXb7QvT02QMl0oPV@localhost:5432/test",
   "table": "rag_chunks",
   "vector_dimension": 1536
 }

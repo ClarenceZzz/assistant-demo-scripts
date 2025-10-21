@@ -11,7 +11,7 @@ from storages.postgres_writer import PostgresWriter, PostgresWriterError
 
 TEST_TABLE = "rag_chunks_test"
 VECTOR_DIM = 4
-DSN = "postgresql://postgres:zAzHHplnxXb7QvT02QMl0oPV@localhost:5432/postgres"
+DSN = "postgresql://postgres:zAzHHplnxXb7QvT02QMl0oPV@localhost:5432/test"
 
 
 def _ensure_schema() -> None:
