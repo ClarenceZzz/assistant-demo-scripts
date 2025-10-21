@@ -270,3 +270,8 @@ class Chunker:
 
         self._api_config_cache = config
         return config
+
+    def disable_llm(self) -> None:
+        """Disable remote LLM calls forcing the splitter to use fallbacks."""
+
+        self._llm_available = False
