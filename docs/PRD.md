@@ -127,6 +127,7 @@
   );
   CREATE INDEX idx_rag_chunks_metadata ON rag_chunks USING GIN (metadata jsonb_path_ops);
   CREATE INDEX idx_rag_chunks_document ON rag_chunks(document_id);
+  CREATE INDEX idx_rag_chunks_embedding_hnsw ON rag_chunks USING hnsw (embedding vector_cosine_ops);
   ```
 - **写入示例（保证事务）**：
   ```python
