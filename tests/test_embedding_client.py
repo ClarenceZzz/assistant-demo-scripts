@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List
 
 import pytest
@@ -71,3 +72,25 @@ def test_embed_permanent_failure(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(EmbeddingClientError):
         client.embed(["a", "b"])
+
+
+def test_embed_logs_request_and_response(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def fake_post(url: str, headers: Dict[str, str], json: Dict[str, Any], timeout: float) -> DummyResponse:
+        return DummyResponse(
+            200,
+            {
+                "data": [
+                    {"embedding": [0.1, 0.1, 0.1]},
+                ]
+            },
+        )
+
+    monkeypatch.setattr("requests.post", fake_post)
+
+    client = EmbeddingClient(api_key="test-key", max_batch_size=4)
+    client.set_log_dir(tmp_path)
+    client.embed(["only one"])
+
+    files = sorted(path.name for path in tmp_path.iterdir())
+    assert "0000_request.json" in files
+    assert "0000_response.json" in files

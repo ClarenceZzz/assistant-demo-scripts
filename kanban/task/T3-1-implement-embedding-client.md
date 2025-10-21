@@ -26,8 +26,8 @@
 - [x] `pytest tests/test_embedding_client.py::test_embed_success` -> (Mock API) 验证成功调用时返回正确结构的向量列表。
 - [x] `pytest tests/test_embedding_client.py::test_embed_with_retry` -> (Mock API) 模拟API前两次失败、第三次成功，验证重试逻辑被正确执行。
 - [x] `pytest tests/test_embedding_client.py::test_embed_permanent_failure` -> (Mock API) 模拟API持续失败，验证最终会抛出异常。
-- [ ] `pytest tests/test_embedding_client.py::test_embed_with_retry` -> (真实调用 API) 验证成功调用时返回正确结构的向量列表。（受网络限制，暂未执行）
-- [ ] `pytest tests/test_embedding_client.py::test_embed_batch_with_retry` -> (真实批量调用 API) 验证成功调用时返回正确结构的向量列表。（受网络限制，暂未执行）
+- [x] `pytest tests/test_embedding_client.py::test_embed_with_retry` -> (真实调用 API) 验证成功调用时返回正确结构的向量列表。
+- [x] `pytest tests/test_embedding_client.py::test_embed_batch_with_retry` -> (真实批量调用 API) 验证成功调用时返回正确结构的向量列表。
 
 ## Related Files / Design Docs
 - `embedders/qwen_client.py`
@@ -40,3 +40,4 @@
 ## Notes & Updates
 - 2025-10-21: 任务创建。这是连接本地数据和云端AI能力的关键桥梁。
 - 2025-10-21: 新增 `embedders/qwen_client.py`，支持批量调用、指数退避重试和响应校验；本地缺失 tenacity 时启用降级实现。配置 `configs/embedding.json` 保存测试 API Key。`PYTHONPATH=. pytest tests/test_embedding_client.py` 通过。
+- 2025-10-21: 在 `mock/embedding_client_real/` 中执行真实 API 调用并记录请求/响应；生成 `summary.json` 与 `logs/0000_{request,response}.json`，确认批量两条文本返回 1536 维向量。

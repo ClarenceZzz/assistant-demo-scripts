@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 import requests
+from requests import RequestException
 try:
     from tenacity import (
         RetryError,
@@ -98,6 +99,8 @@ class EmbeddingClient:
     request_timeout: float = 60.0
     max_batch_size: int = 8
     log_payloads: bool = False
+    log_dir: Optional[Path] = None
+    _request_counter: int = field(default=0, init=False)
 
     def __post_init__(self) -> None:
         if not self.api_key:
@@ -109,6 +112,7 @@ class EmbeddingClient:
         """Return embeddings for the provided texts."""
 
         batches = self._chunk_texts(list(texts), self.max_batch_size)
+        self._request_counter = 0
         embeddings: List[List[float]] = []
         for batch in batches:
             embeddings.extend(self._embed_batch(batch))
@@ -141,18 +145,61 @@ class EmbeddingClient:
             "Content-Type": "application/json",
         }
 
-        response = requests.post(
-            self.base_url,
-            headers=headers,
-            json=payload,
-            timeout=self.request_timeout,
-        )
+        sequence_id = self._request_counter
+        prefix = None
+        if self.log_dir is not None:
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+            prefix = f"{sequence_id:04d}"
+            request_path = self.log_dir / f"{prefix}_request.json"
+            request_path.write_text(
+                json.dumps({"payload": payload}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+        try:
+            response = requests.post(
+                self.base_url,
+                headers=headers,
+                json=payload,
+                timeout=self.request_timeout,
+            )
+        except RequestException as exc:
+            if prefix and self.log_dir is not None:
+                error_path = self.log_dir / f"{prefix}_network_error.json"
+                error_path.write_text(
+                    json.dumps(
+                        {
+                            "error": str(exc),
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+            self._request_counter += 1
+            raise
+
+        self._request_counter += 1
+
         if response.status_code != 200:
             LOGGER.warning(
                 "Embedding API responded with %s: %s",
                 response.status_code,
                 response.text,
             )
+            if prefix and self.log_dir is not None:
+                error_path = self.log_dir / f"{prefix}_status_error.json"
+                error_path.write_text(
+                    json.dumps(
+                        {
+                            "status_code": response.status_code,
+                            "text": response.text,
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
             raise EmbeddingClientError(
                 f"Embedding API error: {response.status_code} {response.text}"
             )
@@ -161,12 +208,38 @@ class EmbeddingClient:
             data = response.json()
         except json.JSONDecodeError as exc:
             LOGGER.error("Unable to decode embedding response: %s", response.text)
+            if prefix and self.log_dir is not None:
+                error_path = self.log_dir / f"{prefix}_response_error.json"
+                error_path.write_text(
+                    json.dumps(
+                        {
+                            "text": response.text,
+                            "error": str(exc),
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
             raise EmbeddingClientError("Invalid JSON response from embedding API") from exc
 
         embeddings = self._parse_embeddings(data)
         if len(embeddings) != len(batch):
             raise EmbeddingClientError(
                 f"Embedding count mismatch: expected {len(batch)}, got {len(embeddings)}"
+            )
+
+        if prefix and self.log_dir is not None:
+            response_path = self.log_dir / f"{prefix}_response.json"
+            response_path.write_text(
+                json.dumps(
+                    {
+                        "response": data,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
             )
 
         return embeddings
@@ -194,3 +267,9 @@ class EmbeddingClient:
                 raise EmbeddingClientError("Embedding vector missing in response item.")
             embeddings.append([float(value) for value in embedding])
         return embeddings
+
+    def set_log_dir(self, directory: Optional[Path]) -> None:
+        """Configure directory where request/response logs will be stored."""
+
+        self.log_dir = directory
+        self._request_counter = 0
