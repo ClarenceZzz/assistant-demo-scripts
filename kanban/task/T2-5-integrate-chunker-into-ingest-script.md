@@ -39,3 +39,5 @@
 ## Notes & Updates
 - 2025-10-20: 任务创建，这是分块阶段的最后一步，标志着该阶段功能交付。
 - 2025-10-20: 新增 `main_chunker.py` 与 `tools/ingest.py`，支持 `--disable-llm` 与可配置输出目录；`python -m tools.ingest --input-file ...` 生成 `data/chunks/*.jsonl`。`PYTHONPATH=. pytest tests/test_integration.py` 通过。
+- 2025-10-21: 增强日志输出，在清洗、分块、写入阶段都有 Info 级提示；在 `mock/ingest_run/` 目录重新验证 `data/raw/产品测评_OG-8598Plus_20251020.html` 流程，生成 10 个分块 JSON。
+- 2025-10-21: 同目录验证 `data/raw/产品说明书_OG-5308_20251020.pdf`，最终产出 61 个分块；打印 `chunking document ...` 日志帮助排查执行耗时。

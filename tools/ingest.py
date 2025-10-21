@@ -112,6 +112,8 @@ def ingest_document(
     """Execute the ingestion pipeline returning the chunks JSONL path."""
 
     doc_id = document_id or input_file.stem
+    LOGGER.info("Starting ingestion for %s (document_id=%s)", input_file, doc_id)
+
     clean_path, cleaned_text = clean_document(input_file, clean_output_dir)
     metadata = load_metadata(doc_id, title=title, meta_path=meta_file)
 
@@ -119,6 +121,12 @@ def ingest_document(
     if not use_llm:
         chunker.disable_llm()
 
+    LOGGER.info(
+        "Chunking document %s using LLM=%s (clean text length=%s)",
+        doc_id,
+        "enabled" if use_llm else "disabled",
+        len(cleaned_text),
+    )
     chunks = chunker.chunk(cleaned_text, document_id=doc_id, metadata_base=metadata)
 
     chunks_output_dir.mkdir(parents=True, exist_ok=True)
@@ -126,7 +134,7 @@ def ingest_document(
     write_chunks(chunks, chunks_path)
 
     LOGGER.info(
-        "Ingestion finished for %s -> %s (clean: %s, chunks: %s)",
+        "Ingestion finished for %s -> %s (clean: %s, chunk_count=%s)",
         input_file,
         chunks_path,
         clean_path,

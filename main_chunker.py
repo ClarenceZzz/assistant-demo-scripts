@@ -88,6 +88,12 @@ def chunk_file(
         chunker.disable_llm()
 
     metadata_base = {"title": title}
+    LOGGER.info(
+        "Chunking %s (document_id=%s, LLM=%s)",
+        input_path,
+        document_id,
+        "disabled" if disable_llm else "enabled",
+    )
     chunks = chunker.chunk(text, document_id=document_id, metadata_base=metadata_base)
 
     output_dir.mkdir(parents=True, exist_ok=True)
