@@ -22,6 +22,7 @@
 - T2-3-build-chunking-pipeline
 - T2-5-integrate-chunker-into-ingest-script
 - T3-1-implement-embedding-client
+- T4-1-implement-db-writer
 
 ## Testing / QA
 - _None_
