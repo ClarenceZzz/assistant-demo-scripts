@@ -39,6 +39,7 @@
 * **Developer**（开发者、任务复杂度等信息）
 * **Acceptance Criteria**（任务验收标准）
 * **Test Cases**（测试用例，记录测试用例和用例描述，可能为空或不全面，在测试过程中视情况，增加测试用例更新到这里）
+* **QA**（任务执行完成后，根据验收标准进行验收的结果）
 * **Related Files / Design Docs**（任务关联的设计文档、看板文档或其他文档）
 * **Dependencies**（前置任务项或依赖任务项）
 * **Notes & Updates**（任务状态更新日志、任务备注或 Review 意见）
