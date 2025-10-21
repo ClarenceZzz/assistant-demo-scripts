@@ -17,11 +17,11 @@
   ```
 
 ## Subtasks
-- [ ] 修改主导入脚本 `tools/ingest.py`。
-- [ ] 在脚本中，添加调用 `Loader` 流程的逻辑。
-- [ ] 在分块步骤成功生成 `.jsonl` 文件后，将该文件的路径传递给 `Loader`。
-- [ ] 确保主脚本能够捕获 `Loader` 流程中可能抛出的最终异常，并以合适的退出码结束。
-- [ ] 更新 `README.md`，说明完整的端到端数据导入流程。
+- [x] 修改主导入脚本 `tools/ingest.py`。
+- [x] 在脚本中，添加调用 `Loader` 流程的逻辑。
+- [x] 在分块步骤成功生成 `.jsonl` 文件后，将该文件的路径传递给 `Loader`。
+- [x] 确保主脚本能够捕获 `Loader` 流程中可能抛出的最终异常，并以合适的退出码结束。
+- [x] 更新 `README.md`，说明完整的端到端数据导入流程。
 
 ## Developer
 - Owner: codex
@@ -32,7 +32,7 @@
 - 主脚本的日志能清晰地反映出清洗、分块、向量化和加载各个阶段的执行情况。
 
 ## Test Cases
-- [ ] 运行主脚本处理 `data/raw` 下的文档，并验证数据是否已成功写入数据库，且向量维度正确。
+- [x] 运行主脚本处理 `data/raw` 下的文档，并验证数据是否已成功写入数据库，且向量维度正确。
 
 ## Related Files / Design Docs
 - `tools/ingest.py`
@@ -43,3 +43,4 @@
 
 ## Notes & Updates
 - 2025-10-21: 任务创建。此任务完成后，整个数据注入管道（ETL）即告完整。
+- 2025-10-21: `tools/ingest.py` 集成 `EmbeddingLoader`，新增 `--dead-letter-dir`、`--loader-batch-size` 参数；`README.md` 更新完整流程；`python3 -m tools.ingest --input-file data/raw/产品测评_OG-8598Plus_20251020.html` 成功执行，`rag_chunks` 表写入 10 条向量。

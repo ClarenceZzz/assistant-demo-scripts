@@ -10,11 +10,15 @@ from typing import Any, Dict, Optional, Tuple
 
 from chunkers.pipeline import Chunker
 from cleaners import BaseCleaner, HTMLCleaner, MarkdownCleaner, PdfCleaner
+from embedders import EmbeddingClientError
+from loaders import EmbeddingLoader
+from storages import PostgresWriterError
 
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_CLEAN_DIR = Path("data/clean")
 DEFAULT_CHUNKS_DIR = Path("data/chunks")
+DEFAULT_DEAD_LETTER_DIR = Path("data/dead_letters")
 
 
 def configure_logging() -> None:
@@ -109,6 +113,8 @@ def ingest_document(
     chunks_output_dir: Path = DEFAULT_CHUNKS_DIR,
     use_llm: bool = True,
     llm_log_dir: Optional[Path] = None,
+    loader_dead_letter_dir: Path = DEFAULT_DEAD_LETTER_DIR,
+    loader_batch_size: int = 16,
 ) -> Path:
     """Execute the ingestion pipeline returning the chunks JSONL path."""
 
@@ -135,6 +141,16 @@ def ingest_document(
     chunks_output_dir.mkdir(parents=True, exist_ok=True)
     chunks_path = chunks_output_dir / f"{doc_id}.jsonl"
     write_chunks(chunks, chunks_path)
+
+    loader = EmbeddingLoader(
+        batch_size=loader_batch_size,
+        dead_letter_dir=loader_dead_letter_dir,
+    )
+    try:
+        loader.run(chunks_path)
+    except (EmbeddingClientError, PostgresWriterError) as exc:
+        LOGGER.exception("Loader failed for %s: %s", doc_id, exc)
+        raise
 
     LOGGER.info(
         "Ingestion finished for %s -> %s (clean: %s, chunk_count=%s)",
@@ -188,6 +204,17 @@ def parse_args() -> argparse.Namespace:
         "--llm-log-dir",
         help="Optional directory to record LLM request/response payloads.",
     )
+    parser.add_argument(
+        "--dead-letter-dir",
+        default=str(DEFAULT_DEAD_LETTER_DIR),
+        help="Directory where loader dead letters should be written.",
+    )
+    parser.add_argument(
+        "--loader-batch-size",
+        type=int,
+        default=16,
+        help="Batch size used when calling the embedding loader.",
+    )
     return parser.parse_args()
 
 
@@ -215,6 +242,8 @@ def main() -> None:
             chunks_output_dir=chunks_dir,
             use_llm=not args.disable_llm,
             llm_log_dir=llm_log_dir,
+            loader_dead_letter_dir=Path(args.dead_letter_dir),
+            loader_batch_size=args.loader_batch_size,
         )
     except FileNotFoundError:
         LOGGER.exception("Input or metadata file not found.")
@@ -222,6 +251,9 @@ def main() -> None:
     except ValueError:
         LOGGER.exception("Invalid input or metadata content.")
         raise SystemExit(2) from None
+    except (EmbeddingClientError, PostgresWriterError):
+        LOGGER.exception("Loader step failed.")
+        raise SystemExit(4) from None
     except Exception:  # noqa: BLE001
         LOGGER.exception("Unexpected error during ingestion.")
         raise SystemExit(3) from None
