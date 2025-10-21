@@ -172,8 +172,10 @@ class Chunker:
                 }
             ],
             "stream": False,
-            "max_tokens": 128,
-            "temperature": 0.3,
+            "max_tokens": 4096,
+            "enable_thinking": True,
+            "thinking_budget": 4096,
+            "temperature": 0.7,
             "top_p": 0.7,
             "n": 1,
             "response_format": {"type": "text"},
