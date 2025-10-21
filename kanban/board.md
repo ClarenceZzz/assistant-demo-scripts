@@ -21,6 +21,7 @@
 - T2-2-implement-semantic-splitter
 - T2-3-build-chunking-pipeline
 - T2-5-integrate-chunker-into-ingest-script
+- T3-1-implement-embedding-client
 
 ## Testing / QA
 - _None_
