@@ -1,0 +1,22 @@
+{
+  "chunk_preview": "这台按摩椅能够让肩颈酸痛得到缓解、疲劳得到释放、睡眠质量得到提升,还能通过个性化定制彰显品味。对追求健康、舒适和智能生活的人来说,入手 OG-8598Plus 完全不踩坑,它值得成为家中不可或缺的健康神器。\n\n举报 / 反馈\n\n[简悦 SimpRead](http://ksria.com/simpread)\n\n[原文地址](https://baijiahao.baidu.com/s?id=1843",
+  "payload": {
+    "model": "Qwen/Qwen3-8B",
+    "messages": [
+      {
+        "role": "user",
+        "content": "为以下文本块生成一个不超过10个字的简短总结作为高质量、概括性的section元数据，只能返回标题，不能包含其他内容：\n\n这台按摩椅能够让肩颈酸痛得到缓解、疲劳得到释放、睡眠质量得到提升,还能通过个性化定制彰显品味。对追求健康、舒适和智能生活的人来说,入手 OG-8598Plus 完全不踩坑,它值得成为家中不可或缺的健康神器。\n\n举报 / 反馈\n\n[简悦 SimpRead](http://ksria.com/simpread)\n\n[原文地址](https://baijiahao.baidu.com/s?id=1843952026349690917&wfr=spider&for=pc)"
+      }
+    ],
+    "stream": false,
+    "max_tokens": 4096,
+    "enable_thinking": true,
+    "thinking_budget": 4096,
+    "temperature": 0.7,
+    "top_p": 0.7,
+    "n": 1,
+    "response_format": {
+      "type": "text"
+    }
+  }
+}

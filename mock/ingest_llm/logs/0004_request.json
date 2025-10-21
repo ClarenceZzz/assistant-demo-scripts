@@ -1,0 +1,22 @@
+{
+  "chunk_preview": "定时时间 无法操作,按摩椅也 已到,请重新按键即可操作。\n无法操作 2)关掉电源,重新通电启动按摩椅\n\n若以上处理方法无效,参阅《产品保修卡》,联系OGAWA服务中心。",
+  "payload": {
+    "model": "Qwen/Qwen3-8B",
+    "messages": [
+      {
+        "role": "user",
+        "content": "为以下文本块生成一个不超过10个字的简短总结作为高质量、概括性的section元数据，只能返回标题，不能包含其他内容：\n\n定时时间 无法操作,按摩椅也 已到,请重新按键即可操作。\n无法操作 2)关掉电源,重新通电启动按摩椅\n\n若以上处理方法无效,参阅《产品保修卡》,联系OGAWA服务中心。"
+      }
+    ],
+    "stream": false,
+    "max_tokens": 4096,
+    "enable_thinking": true,
+    "thinking_budget": 4096,
+    "temperature": 0.7,
+    "top_p": 0.7,
+    "n": 1,
+    "response_format": {
+      "type": "text"
+    }
+  }
+}

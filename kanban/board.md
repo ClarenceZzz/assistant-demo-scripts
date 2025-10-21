@@ -4,7 +4,6 @@
 - T1-4-implement-markdown-cleaner
 - T1-5-process-embedded-images
 - T2-4-implement-small-chunk-merger
-- T2-5-integrate-chunker-into-ingest-script
 
 ## To Do
 - _None_
@@ -21,6 +20,7 @@
 - T2-1-implement-recursive-text-splitter
 - T2-2-implement-semantic-splitter
 - T2-3-build-chunking-pipeline
+- T2-5-integrate-chunker-into-ingest-script
 
 ## Testing / QA
 - _None_
