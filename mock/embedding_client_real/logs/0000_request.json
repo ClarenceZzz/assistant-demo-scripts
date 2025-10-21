@@ -1,0 +1,11 @@
+{
+  "payload": {
+    "model": "Qwen/Qwen3-Embedding-8B",
+    "input": [
+      "Silicon flow embedding online: fast, affordable, and high-quality embedding services. come try it out!",
+      "测试调用嵌入接口，验证批量请求是否成功返回。"
+    ],
+    "encoding_format": "float",
+    "dimensions": 1536
+  }
+}
