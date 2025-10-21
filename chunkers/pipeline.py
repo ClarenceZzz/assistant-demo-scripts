@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional
 import requests
 from requests import RequestException, Response
 
+from embedders import EmbeddingClient, EmbeddingClientError
+
 from chunkers.recursive_splitter import RecursiveTextSplitter
 from chunkers.semantic_splitter import SemanticSplitter
 
@@ -56,6 +58,7 @@ class Chunker:
     _llm_available: bool = field(default=True, init=False)
     llm_log_dir: Optional[Path] = field(default=None, init=False)
     _request_counter: int = field(default=0, init=False)
+    section_client: Optional[EmbeddingClient] = field(default_factory=EmbeddingClient)
 
     def __post_init__(self) -> None:
         self.recursive_splitter = RecursiveTextSplitter(
@@ -154,86 +157,21 @@ class Chunker:
     def _generate_section_title(self, chunk_content: str) -> str:
         """Generate a short section title using the configured LLM."""
 
-        if not self._llm_available:
+        if self.section_client is None:
             return ""
 
-        config = self._load_api_config()
-        if not config:
-            return ""
-
-        chunk_preview = chunk_content[:200]
-        payload = {
-            "model": config.get("model", ""),
-            "messages": [
-                {
-                    "role": "user",
-                    "content": (
-                        "为以下文本块生成一个不超过10个字的简短总结作为高质量、概括性的"
-                        "section元数据，只能返回标题，不能包含其他内容：\n\n"
-                        f"{chunk_content}"
-                    ),
-                }
-            ],
-            "stream": False,
-            "max_tokens": 4096,
-            "enable_thinking": True,
-            "thinking_budget": 4096,
-            "temperature": 0.7,
-            "top_p": 0.7,
-            "n": 1,
-            "response_format": {"type": "text"},
-        }
-
-        headers = {
-            "Authorization": f"Bearer {config.get('api_key', '')}",
-            "Content-Type": "application/json",
-        }
-
-        log_prefix: Optional[str] = None
         if self.llm_log_dir is not None:
-            self.llm_log_dir.mkdir(parents=True, exist_ok=True)
-            log_prefix = f"{self._request_counter:04d}"
-            request_log = self.llm_log_dir / f"{log_prefix}_request.json"
-            request_log.write_text(
-                json.dumps(
-                    {
-                        "chunk_preview": chunk_preview,
-                        "payload": payload,
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                encoding="utf-8",
-            )
-        self._request_counter += 1
+            self.section_client.log_dir = self.llm_log_dir
 
         try:
-            response = requests.post(
-                config.get("base_url", ""),
-                json=payload,
-                headers=headers,
-                timeout=float(config.get("timeout", 8.0)),
-            )
-            response.raise_for_status()
-        except (RequestException, ValueError) as exc:
+            titles = self.section_client.generate_section_titles([chunk_content])
+        except EmbeddingClientError as exc:
             logger.warning("LLM section title generation failed: %s", exc)
-            if log_prefix and self.llm_log_dir is not None:
-                error_log = self.llm_log_dir / f"{log_prefix}_error.json"
-                error_log.write_text(
-                    json.dumps(
-                        {
-                            "chunk_preview": chunk_preview,
-                            "error": str(exc),
-                        },
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
-                    encoding="utf-8",
-                )
-            self._llm_available = False
             return ""
 
-        return self._extract_content_from_response(response, log_prefix, chunk_preview)
+        if not titles:
+            return ""
+        return titles[0].strip()
 
     def _fallback_section_title(
         self,
