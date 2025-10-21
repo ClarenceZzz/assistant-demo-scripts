@@ -1,7 +1,20 @@
 # T4-3-integrate-loader-into-ingest-script: 集成加载流程
 
 ## Goal
-将 `Loader` 主流程正式集成到项目的主数据导入脚本（如 `tools/ingest.py`）中，使其成为分块（Transform-2）之后的最终处理阶段。
+将 `Loader` 主流程正式集成到项目的主数据导入脚本（如 `tools/ingest.py`）中，使其成为分块（Transform-2）之后的最终处理阶段。涉及到的表已经建好，建表语句：
+  ```sql
+  CREATE TABLE rag_chunks (
+    chunk_id TEXT PRIMARY KEY,
+    document_id TEXT,
+    content TEXT,
+    embedding VECTOR(1536),
+    metadata JSONB,
+    last_modified TIMESTAMP DEFAULT now()
+  );
+  CREATE INDEX idx_rag_chunks_metadata ON rag_chunks USING GIN (metadata jsonb_path_ops);
+  CREATE INDEX idx_rag_chunks_document ON rag_chunks(document_id);
+  CREATE INDEX idx_rag_chunks_embedding_hnsw ON rag_chunks USING hnsw (embedding vector_cosine_ops);
+  ```
 
 ## Subtasks
 - [ ] 修改主导入脚本 `tools/ingest.py`。
@@ -15,11 +28,11 @@
 - Complexity: L
 
 ## Acceptance Criteria
-- 运行 `python tools/ingest.py --input-file ./samples/some_doc.pdf` 后，该文档的所有分块最终被向量化并存入数据库。
+- 运行主脚本后，该文档的所有分块最终被向量化并存入数据库。
 - 主脚本的日志能清晰地反映出清洗、分块、向量化和加载各个阶段的执行情况。
 
 ## Test Cases
-- [ ] **端到端测试**：手动运行主脚本处理一个新文档，并使用 `psql` 或其他数据库客户端验证数据是否已成功写入数据库，且向量维度正确。
+- [ ] 运行主脚本处理 `data/raw` 下的文档，并验证数据是否已成功写入数据库，且向量维度正确。
 
 ## Related Files / Design Docs
 - `tools/ingest.py`
