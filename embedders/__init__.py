@@ -1,5 +1,5 @@
 """Embedding client package."""
 
-from .qwen_client import EmbeddingClient
+from .qwen_client import EmbeddingClient, EmbeddingClientError
 
-__all__ = ["EmbeddingClient"]
+__all__ = ["EmbeddingClient", "EmbeddingClientError"]
