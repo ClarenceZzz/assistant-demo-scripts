@@ -108,6 +108,7 @@ def ingest_document(
     clean_output_dir: Path = DEFAULT_CLEAN_DIR,
     chunks_output_dir: Path = DEFAULT_CHUNKS_DIR,
     use_llm: bool = True,
+    llm_log_dir: Optional[Path] = None,
 ) -> Path:
     """Execute the ingestion pipeline returning the chunks JSONL path."""
 
@@ -120,6 +121,8 @@ def ingest_document(
     chunker = Chunker()
     if not use_llm:
         chunker.disable_llm()
+    if llm_log_dir is not None:
+        chunker.set_llm_log_dir(llm_log_dir)
 
     LOGGER.info(
         "Chunking document %s using LLM=%s (clean text length=%s)",
@@ -181,6 +184,10 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable remote LLM calls when generating section titles.",
     )
+    parser.add_argument(
+        "--llm-log-dir",
+        help="Optional directory to record LLM request/response payloads.",
+    )
     return parser.parse_args()
 
 
@@ -196,6 +203,7 @@ def main() -> None:
     meta_file = Path(args.meta_file) if args.meta_file else None
     clean_dir = Path(args.clean_output_dir)
     chunks_dir = Path(args.chunks_output_dir)
+    llm_log_dir = Path(args.llm_log_dir) if args.llm_log_dir else None
 
     try:
         ingest_document(
@@ -206,6 +214,7 @@ def main() -> None:
             clean_output_dir=clean_dir,
             chunks_output_dir=chunks_dir,
             use_llm=not args.disable_llm,
+            llm_log_dir=llm_log_dir,
         )
     except FileNotFoundError:
         LOGGER.exception("Input or metadata file not found.")

@@ -54,6 +54,8 @@ class Chunker:
     recursive_splitter: RecursiveTextSplitter = field(init=False)
     _api_config_cache: Optional[Dict[str, Any]] = field(default=None, init=False)
     _llm_available: bool = field(default=True, init=False)
+    llm_log_dir: Optional[Path] = field(default=None, init=False)
+    _request_counter: int = field(default=0, init=False)
 
     def __post_init__(self) -> None:
         self.recursive_splitter = RecursiveTextSplitter(
@@ -159,6 +161,7 @@ class Chunker:
         if not config:
             return ""
 
+        chunk_preview = chunk_content[:200]
         payload = {
             "model": config.get("model", ""),
             "messages": [
@@ -186,6 +189,24 @@ class Chunker:
             "Content-Type": "application/json",
         }
 
+        log_prefix: Optional[str] = None
+        if self.llm_log_dir is not None:
+            self.llm_log_dir.mkdir(parents=True, exist_ok=True)
+            log_prefix = f"{self._request_counter:04d}"
+            request_log = self.llm_log_dir / f"{log_prefix}_request.json"
+            request_log.write_text(
+                json.dumps(
+                    {
+                        "chunk_preview": chunk_preview,
+                        "payload": payload,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+        self._request_counter += 1
+
         try:
             response = requests.post(
                 config.get("base_url", ""),
@@ -196,10 +217,23 @@ class Chunker:
             response.raise_for_status()
         except (RequestException, ValueError) as exc:
             logger.warning("LLM section title generation failed: %s", exc)
+            if log_prefix and self.llm_log_dir is not None:
+                error_log = self.llm_log_dir / f"{log_prefix}_error.json"
+                error_log.write_text(
+                    json.dumps(
+                        {
+                            "chunk_preview": chunk_preview,
+                            "error": str(exc),
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
             self._llm_available = False
             return ""
 
-        return self._extract_content_from_response(response)
+        return self._extract_content_from_response(response, log_prefix, chunk_preview)
 
     def _fallback_section_title(
         self,
@@ -226,27 +260,86 @@ class Chunker:
             return fallback[:10]
         return ""
 
-    def _extract_content_from_response(self, response: Response) -> str:
+    def _extract_content_from_response(
+        self,
+        response: Response,
+        log_prefix: Optional[str],
+        chunk_preview: str,
+    ) -> str:
         """Parse title text from LLM response."""
 
         try:
             data = response.json()
         except (ValueError, json.JSONDecodeError) as exc:
             logger.warning("Invalid LLM response format: %s", exc)
+            if log_prefix and self.llm_log_dir is not None:
+                error_log = self.llm_log_dir / f"{log_prefix}_response_error.json"
+                error_log.write_text(
+                    json.dumps(
+                        {
+                            "chunk_preview": chunk_preview,
+                            "error": str(exc),
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
             self._llm_available = False
             return ""
 
         try:
             choices = data["choices"]
             if not choices:
+                if log_prefix and self.llm_log_dir is not None:
+                    empty_log = self.llm_log_dir / f"{log_prefix}_response_empty.json"
+                    empty_log.write_text(
+                        json.dumps(
+                            {
+                                "chunk_preview": chunk_preview,
+                                "response": data,
+                            },
+                            ensure_ascii=False,
+                            indent=2,
+                        ),
+                        encoding="utf-8",
+                    )
                 return ""
             message = choices[0]["message"]
             content = message.get("content", "")
             if not isinstance(content, str):
                 return ""
-            return content.strip()
+            extracted = content.strip()
+            if log_prefix and self.llm_log_dir is not None:
+                response_log = self.llm_log_dir / f"{log_prefix}_response.json"
+                response_log.write_text(
+                    json.dumps(
+                        {
+                            "chunk_preview": chunk_preview,
+                            "response": data,
+                            "extracted_title": extracted,
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+            return extracted
         except (KeyError, TypeError):
             logger.warning("Missing expected fields in LLM response.")
+            if log_prefix and self.llm_log_dir is not None:
+                error_log = self.llm_log_dir / f"{log_prefix}_response_error.json"
+                error_log.write_text(
+                    json.dumps(
+                        {
+                            "chunk_preview": chunk_preview,
+                            "error": "Missing expected fields in response.",
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
             self._llm_available = False
             return ""
 
@@ -275,3 +368,11 @@ class Chunker:
         """Disable remote LLM calls forcing the splitter to use fallbacks."""
 
         self._llm_available = False
+
+    def set_llm_log_dir(self, log_dir: Optional[Path]) -> None:
+        """Configure directory where LLM request/response logs should be written."""
+
+        self.llm_log_dir = log_dir
+        self._request_counter = 0
+        if log_dir is not None:
+            log_dir.mkdir(parents=True, exist_ok=True)

@@ -6,7 +6,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from chunkers.pipeline import Chunker
 
@@ -51,6 +51,10 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable remote LLM calls when generating section titles.",
     )
+    parser.add_argument(
+        "--llm-log-dir",
+        help="Optional directory to record LLM request/response payloads.",
+    )
     return parser.parse_args()
 
 
@@ -75,6 +79,7 @@ def chunk_file(
     title: str,
     output_dir: Path,
     disable_llm: bool = False,
+    llm_log_dir: Optional[Path] = None,
 ) -> Path:
     """Chunk ``input_path`` and persist the JSONL output in ``output_dir``."""
 
@@ -86,6 +91,8 @@ def chunk_file(
     chunker = Chunker()
     if disable_llm:
         chunker.disable_llm()
+    if llm_log_dir is not None:
+        chunker.set_llm_log_dir(llm_log_dir)
 
     metadata_base = {"title": title}
     LOGGER.info(
@@ -125,6 +132,7 @@ def main() -> None:
             title=title,
             output_dir=output_dir,
             disable_llm=args.disable_llm,
+            llm_log_dir=Path(args.llm_log_dir) if args.llm_log_dir else None,
         )
     except FileNotFoundError:
         LOGGER.exception("Input file does not exist: %s", input_path)
