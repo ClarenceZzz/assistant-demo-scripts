@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import requests
-from requests import RequestException, Response
+from embedders import EmbeddingClient, EmbeddingClientError
 
 from chunkers.recursive_splitter import RecursiveTextSplitter
 from chunkers.semantic_splitter import SemanticSplitter
@@ -49,19 +47,18 @@ class Chunker:
 
     chunk_size: int = 300
     overlap: int = 50
-    config_path: Path = Path("configs/llm_config.json")
     semantic_splitter: SemanticSplitter = field(default_factory=SemanticSplitter)
     recursive_splitter: RecursiveTextSplitter = field(init=False)
-    _api_config_cache: Optional[Dict[str, Any]] = field(default=None, init=False)
-    _llm_available: bool = field(default=True, init=False)
     llm_log_dir: Optional[Path] = field(default=None, init=False)
-    _request_counter: int = field(default=0, init=False)
+    section_client: Optional[EmbeddingClient] = None
 
     def __post_init__(self) -> None:
         self.recursive_splitter = RecursiveTextSplitter(
             chunk_size=self.chunk_size,
             overlap=self.overlap,
         )
+        if self.section_client is None:
+            self.section_client = EmbeddingClient()
 
     def chunk(
         self,
@@ -154,86 +151,17 @@ class Chunker:
     def _generate_section_title(self, chunk_content: str) -> str:
         """Generate a short section title using the configured LLM."""
 
-        if not self._llm_available:
+        if self.section_client is None:
             return ""
 
-        config = self._load_api_config()
-        if not config:
-            return ""
-
-        chunk_preview = chunk_content[:200]
-        payload = {
-            "model": config.get("model", ""),
-            "messages": [
-                {
-                    "role": "user",
-                    "content": (
-                        "为以下文本块生成一个不超过10个字的简短总结作为高质量、概括性的"
-                        "section元数据，只能返回标题，不能包含其他内容：\n\n"
-                        f"{chunk_content}"
-                    ),
-                }
-            ],
-            "stream": False,
-            "max_tokens": 4096,
-            "enable_thinking": True,
-            "thinking_budget": 4096,
-            "temperature": 0.7,
-            "top_p": 0.7,
-            "n": 1,
-            "response_format": {"type": "text"},
-        }
-
-        headers = {
-            "Authorization": f"Bearer {config.get('api_key', '')}",
-            "Content-Type": "application/json",
-        }
-
-        log_prefix: Optional[str] = None
         if self.llm_log_dir is not None:
-            self.llm_log_dir.mkdir(parents=True, exist_ok=True)
-            log_prefix = f"{self._request_counter:04d}"
-            request_log = self.llm_log_dir / f"{log_prefix}_request.json"
-            request_log.write_text(
-                json.dumps(
-                    {
-                        "chunk_preview": chunk_preview,
-                        "payload": payload,
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                encoding="utf-8",
-            )
-        self._request_counter += 1
+            self.section_client.log_dir = self.llm_log_dir
 
         try:
-            response = requests.post(
-                config.get("base_url", ""),
-                json=payload,
-                headers=headers,
-                timeout=float(config.get("timeout", 8.0)),
-            )
-            response.raise_for_status()
-        except (RequestException, ValueError) as exc:
-            logger.warning("LLM section title generation failed: %s", exc)
-            if log_prefix and self.llm_log_dir is not None:
-                error_log = self.llm_log_dir / f"{log_prefix}_error.json"
-                error_log.write_text(
-                    json.dumps(
-                        {
-                            "chunk_preview": chunk_preview,
-                            "error": str(exc),
-                        },
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
-                    encoding="utf-8",
-                )
-            self._llm_available = False
+            return self.section_client.generate_section_titles([chunk_content])[0]
+        except EmbeddingClientError as exc:
+            logger.warning("Section generation failed: %s", exc)
             return ""
-
-        return self._extract_content_from_response(response, log_prefix, chunk_preview)
 
     def _fallback_section_title(
         self,
@@ -260,119 +188,14 @@ class Chunker:
             return fallback[:10]
         return ""
 
-    def _extract_content_from_response(
-        self,
-        response: Response,
-        log_prefix: Optional[str],
-        chunk_preview: str,
-    ) -> str:
-        """Parse title text from LLM response."""
-
-        try:
-            data = response.json()
-        except (ValueError, json.JSONDecodeError) as exc:
-            logger.warning("Invalid LLM response format: %s", exc)
-            if log_prefix and self.llm_log_dir is not None:
-                error_log = self.llm_log_dir / f"{log_prefix}_response_error.json"
-                error_log.write_text(
-                    json.dumps(
-                        {
-                            "chunk_preview": chunk_preview,
-                            "error": str(exc),
-                        },
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
-                    encoding="utf-8",
-                )
-            self._llm_available = False
-            return ""
-
-        try:
-            choices = data["choices"]
-            if not choices:
-                if log_prefix and self.llm_log_dir is not None:
-                    empty_log = self.llm_log_dir / f"{log_prefix}_response_empty.json"
-                    empty_log.write_text(
-                        json.dumps(
-                            {
-                                "chunk_preview": chunk_preview,
-                                "response": data,
-                            },
-                            ensure_ascii=False,
-                            indent=2,
-                        ),
-                        encoding="utf-8",
-                    )
-                return ""
-            message = choices[0]["message"]
-            content = message.get("content", "")
-            if not isinstance(content, str):
-                return ""
-            extracted = content.strip()
-            if log_prefix and self.llm_log_dir is not None:
-                response_log = self.llm_log_dir / f"{log_prefix}_response.json"
-                response_log.write_text(
-                    json.dumps(
-                        {
-                            "chunk_preview": chunk_preview,
-                            "response": data,
-                            "extracted_title": extracted,
-                        },
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
-                    encoding="utf-8",
-                )
-            return extracted
-        except (KeyError, TypeError):
-            logger.warning("Missing expected fields in LLM response.")
-            if log_prefix and self.llm_log_dir is not None:
-                error_log = self.llm_log_dir / f"{log_prefix}_response_error.json"
-                error_log.write_text(
-                    json.dumps(
-                        {
-                            "chunk_preview": chunk_preview,
-                            "error": "Missing expected fields in response.",
-                        },
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
-                    encoding="utf-8",
-                )
-            self._llm_available = False
-            return ""
-
-    def _load_api_config(self) -> Optional[Dict[str, Any]]:
-        """Load the API configuration from ``config_path``."""
-
-        if self._api_config_cache is not None:
-            return self._api_config_cache
-
-        try:
-            raw = self.config_path.read_text(encoding="utf-8")
-            config = json.loads(raw)
-        except FileNotFoundError:
-            logger.warning("LLM config file not found: %s", self.config_path)
-            self._api_config_cache = None
-            return None
-        except json.JSONDecodeError as exc:
-            logger.warning("Fail to parse LLM config: %s", exc)
-            self._api_config_cache = None
-            return None
-
-        self._api_config_cache = config
-        return config
-
     def disable_llm(self) -> None:
         """Disable remote LLM calls forcing the splitter to use fallbacks."""
 
-        self._llm_available = False
+        self.section_client = None
 
     def set_llm_log_dir(self, log_dir: Optional[Path]) -> None:
         """Configure directory where LLM request/response logs should be written."""
 
         self.llm_log_dir = log_dir
-        self._request_counter = 0
         if log_dir is not None:
             log_dir.mkdir(parents=True, exist_ok=True)

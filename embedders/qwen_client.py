@@ -101,6 +101,10 @@ class EmbeddingClient:
     log_payloads: bool = False
     log_dir: Optional[Path] = None
     _request_counter: int = field(default=0, init=False)
+    section_base_url: str = "https://api.siliconflow.cn/v1/chat/completions"
+    section_model: str = "Qwen/Qwen3-14B"
+    section_batch_size: int = 4
+    _section_request_counter: int = field(default=0, init=False)
 
     def __post_init__(self) -> None:
         if not self.api_key:
@@ -117,6 +121,25 @@ class EmbeddingClient:
         for batch in batches:
             embeddings.extend(self._embed_batch(batch))
         return embeddings
+
+    def generate_section_titles(self, texts: Iterable[str]) -> List[str]:
+        """Generate short section titles for ``texts`` using chat completions."""
+
+        text_list = list(texts)
+        if not text_list:
+            return []
+
+        results: List[str] = []
+        self._section_request_counter = 0
+        for batch in self._chunk_texts(text_list, self.section_batch_size):
+            batch_results: List[str] = []
+            for text in batch:
+                try:
+                    batch_results.append(self._call_section_api(text))
+                except RetryError as exc:
+                    raise EmbeddingClientError("Section title generation failed after retries") from exc
+            results.extend(batch_results)
+        return results
 
     def _chunk_texts(self, texts: List[str], size: int) -> List[List[str]]:
         """Split ``texts`` into batches of ``size``."""
@@ -267,6 +290,133 @@ class EmbeddingClient:
                 raise EmbeddingClientError("Embedding vector missing in response item.")
             embeddings.append([float(value) for value in embedding])
         return embeddings
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True,
+    )
+    def _call_section_api(self, text: str) -> str:
+        """Call chat completion API to generate a section title."""
+
+        payload = {
+            "model": self.section_model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "为以下文本块生成一个不超过10个字的简短总结作为高质量、概括性的section元数据，只能返回标题，不能包含其他内容："
+                        f"{text}"
+                    ),
+                }
+            ],
+            "stream": False,
+            "max_tokens": 128,
+            "enable_thinking": True,
+            "thinking_budget": 512,
+            "min_p": 0.05,
+            "stop": None,
+            "temperature": 0.3,
+            "top_p": 0.7,
+            "top_k": 50,
+            "frequency_penalty": 0.5,
+            "n": 1,
+            "response_format": {"type": "text"},
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        sequence_id = self._section_request_counter
+        prefix = None
+        if self.log_dir is not None:
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+            prefix = f"section_{sequence_id:04d}"
+            request_path = self.log_dir / f"{prefix}_request.json"
+            request_path.write_text(
+                json.dumps({"payload": payload}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+        try:
+            response = requests.post(
+                self.section_base_url,
+                headers=headers,
+                json=payload,
+                timeout=self.request_timeout,
+            )
+        except RequestException as exc:
+            if prefix and self.log_dir is not None:
+                error_path = self.log_dir / f"{prefix}_network_error.json"
+                error_path.write_text(
+                    json.dumps({"error": str(exc)}, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+            self._section_request_counter += 1
+            raise
+
+        self._section_request_counter += 1
+
+        if response.status_code != 200:
+            if prefix and self.log_dir is not None:
+                error_path = self.log_dir / f"{prefix}_status_error.json"
+                error_path.write_text(
+                    json.dumps(
+                        {
+                            "status_code": response.status_code,
+                            "text": response.text,
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+            raise EmbeddingClientError(
+                f"Section API error: {response.status_code} {response.text}"
+            )
+
+        try:
+            data = response.json()
+        except json.JSONDecodeError as exc:
+            if prefix and self.log_dir is not None:
+                error_path = self.log_dir / f"{prefix}_response_error.json"
+                error_path.write_text(
+                    json.dumps(
+                        {
+                            "text": response.text,
+                            "error": str(exc),
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+            raise EmbeddingClientError("Invalid section response JSON") from exc
+
+        title = self._parse_section_title(data)
+
+        if prefix and self.log_dir is not None:
+            response_path = self.log_dir / f"{prefix}_response.json"
+            response_path.write_text(
+                json.dumps({"response": data}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+        return title
+
+    @staticmethod
+    def _parse_section_title(payload: dict) -> str:
+        try:
+            choices = payload["choices"]
+            message = choices[0]["message"]
+            content = message.get("content", "")
+        except (KeyError, IndexError, TypeError) as exc:
+            raise EmbeddingClientError("Unexpected section response structure.") from exc
+
+        title = content.strip()
+        return title
 
     def set_log_dir(self, directory: Optional[Path]) -> None:
         """Configure directory where request/response logs will be stored."""

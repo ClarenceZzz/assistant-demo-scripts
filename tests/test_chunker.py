@@ -3,36 +3,21 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 import pytest
-import requests
 
 from chunkers.pipeline import Chunker
-
-
-class DummyResponse:
-    def __init__(self, payload: Dict[str, Any]) -> None:
-        self._payload = payload
-
-    def json(self) -> Dict[str, Any]:
-        return self._payload
-
-    def raise_for_status(self) -> None:  # pragma: no cover - simple stub
-        return None
+from embedders import EmbeddingClientError
 
 
 def test_chunking_pipeline_complex_doc(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: List[Dict[str, Any]] = []
+    calls: List[List[str]] = []
 
-    def fake_post(*args: Any, **kwargs: Any) -> DummyResponse:
-        calls.append({"args": args, "kwargs": kwargs})
-        return DummyResponse(
-            {
-                "choices": [
-                    {"message": {"content": "自动摘要"}},
-                ]
-            }
-        )
+    def fake_generate(self, texts: List[str]) -> List[str]:
+        calls.append(texts)
+        return ["自动摘要" for _ in texts]
 
-    monkeypatch.setattr("chunkers.pipeline.requests.post", fake_post)
+    monkeypatch.setattr(
+        "chunkers.pipeline.EmbeddingClient.generate_section_titles", fake_generate
+    )
 
     chunker = Chunker(chunk_size=120, overlap=20)
     document_content = (
@@ -66,20 +51,15 @@ def test_chunking_pipeline_complex_doc(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_chunking_pipeline_output_format(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured_payload: Dict[str, Any] = {}
+    captured_texts: List[List[str]] = []
 
-    def fake_post(*args: Any, **kwargs: Any) -> DummyResponse:
-        nonlocal captured_payload
-        captured_payload = kwargs["json"]
-        return DummyResponse(
-            {
-                "choices": [
-                    {"message": {"content": "自动生成标题"}},
-                ]
-            }
-        )
+    def fake_generate(self, texts: List[str]) -> List[str]:
+        captured_texts.append(texts)
+        return ["自动生成标题" for _ in texts]
 
-    monkeypatch.setattr("chunkers.pipeline.requests.post", fake_post)
+    monkeypatch.setattr(
+        "chunkers.pipeline.EmbeddingClient.generate_section_titles", fake_generate
+    )
 
     chunker = Chunker(chunk_size=200, overlap=30)
     content = "这是没有标题的段落，需要生成节选标题。"
@@ -97,16 +77,18 @@ def test_chunking_pipeline_output_format(monkeypatch: pytest.MonkeyPatch) -> Non
         "section": "自动生成标题",
         "chunk_index": 0,
     }
-    assert captured_payload["messages"][0]["content"].endswith(content)
+    assert captured_texts and captured_texts[0][0] == content
 
 
 def test_chunking_pipeline_llm_failure_returns_empty_section(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def fake_post(*args: Any, **kwargs: Any) -> DummyResponse:
-        raise requests.RequestException("network error")
+    def fake_generate(self, texts: List[str]) -> List[str]:
+        raise EmbeddingClientError("network error")
 
-    monkeypatch.setattr("chunkers.pipeline.requests.post", fake_post)
+    monkeypatch.setattr(
+        "chunkers.pipeline.EmbeddingClient.generate_section_titles", fake_generate
+    )
 
     chunker = Chunker(chunk_size=200, overlap=30)
     content = "另一个无标题段落。"
