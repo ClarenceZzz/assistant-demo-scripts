@@ -4,6 +4,8 @@ from typing import Any, Dict, List
 
 import pytest
 
+import chunkers.pipeline as pipeline
+
 from chunkers.pipeline import Chunker
 from embedders import EmbeddingClientError
 
@@ -16,7 +18,9 @@ def test_chunking_pipeline_complex_doc(monkeypatch: pytest.MonkeyPatch) -> None:
         return ["自动摘要" for _ in texts]
 
     monkeypatch.setattr(
-        "chunkers.pipeline.EmbeddingClient.generate_section_titles", fake_generate
+        pipeline.EmbeddingClient,
+        "generate_section_titles",
+        fake_generate,
     )
 
     chunker = Chunker(chunk_size=120, overlap=20)
@@ -58,7 +62,9 @@ def test_chunking_pipeline_output_format(monkeypatch: pytest.MonkeyPatch) -> Non
         return ["自动生成标题" for _ in texts]
 
     monkeypatch.setattr(
-        "chunkers.pipeline.EmbeddingClient.generate_section_titles", fake_generate
+        pipeline.EmbeddingClient,
+        "generate_section_titles",
+        fake_generate,
     )
 
     chunker = Chunker(chunk_size=200, overlap=30)
@@ -87,7 +93,9 @@ def test_chunking_pipeline_llm_failure_returns_empty_section(
         raise EmbeddingClientError("network error")
 
     monkeypatch.setattr(
-        "chunkers.pipeline.EmbeddingClient.generate_section_titles", fake_generate
+        pipeline.EmbeddingClient,
+        "generate_section_titles",
+        fake_generate,
     )
 
     chunker = Chunker(chunk_size=200, overlap=30)
