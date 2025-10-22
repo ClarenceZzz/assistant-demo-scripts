@@ -4,10 +4,9 @@ from typing import Any, Dict, List
 
 import pytest
 
-import chunkers.pipeline as pipeline
-
-from chunkers.pipeline import Chunker
-from embedders import EmbeddingClientError
+from assistant_demo.chunkers import pipeline
+from assistant_demo.chunkers.pipeline import Chunker
+from assistant_demo.embedders import EmbeddingClientError
 
 
 def test_chunking_pipeline_complex_doc(monkeypatch: pytest.MonkeyPatch) -> None:

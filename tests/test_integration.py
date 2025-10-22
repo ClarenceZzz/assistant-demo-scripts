@@ -9,7 +9,7 @@ from typing import List
 
 import pytest
 
-from tools.ingest import ingest_document
+from assistant_demo.tools.ingest import ingest_document
 
 
 def read_jsonl(path: Path) -> List[dict]:
@@ -28,12 +28,18 @@ def test_chunker_cli_generates_output(tmp_path: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(Path.cwd())
+    project_src = Path.cwd() / "src"
+    existing_path = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = (
+        f"{project_src}{os.pathsep}{existing_path}" if existing_path else str(project_src)
+    )
 
     result = subprocess.run(
         [
             sys.executable,
-            "main_chunker.py",
+            "-m",
+            "assistant_demo.cli",
+            "chunk",
             "--input-file",
             str(cleaned_text),
             "--document-id",
@@ -73,7 +79,7 @@ def test_e2e_ingestion_produces_chunks(tmp_path: Path, monkeypatch: pytest.Monke
         return "自动摘要"
 
     monkeypatch.setattr(
-        "chunkers.pipeline.Chunker._generate_section_title",
+        "assistant_demo.chunkers.pipeline.Chunker._generate_section_title",
         _fake_generate,
     )
 

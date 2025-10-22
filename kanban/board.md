@@ -25,6 +25,7 @@
 - T4-1-implement-db-writer
 - T4-2-build-embedding-and-load-pipeline
 - T4-3-integrate-loader-into-ingest-script
+- T5-1-project-structure-refactor
 
 ## Testing / QA
 - _None_

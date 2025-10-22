@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from cleaners import HtmlCleaner
+from assistant_demo.cleaners import HtmlCleaner
+
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+RAW_DATA_DIR = FIXTURES_DIR / "data" / "raw"
 
 
 def _write_html(tmp_path: Path, filename: str, content: str) -> Path:
@@ -154,7 +157,8 @@ def test_html_cleaner_outputs_markdown_shape(tmp_path: Path) -> None:
 
 def test_html_cleaner_cleans_real_product_article() -> None:
     cleaner = HtmlCleaner()
-    result = cleaner.clean("data/raw/产品测评_OG-8598Plus_20251020.html")
+    fixture_path = RAW_DATA_DIR / "产品测评_OG-8598Plus_20251020.html"
+    result = cleaner.clean(str(fixture_path))
     lines = result.splitlines()
 
     assert lines

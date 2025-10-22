@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-from embedders.qwen_client import EmbeddingClient, EmbeddingClientError
+from assistant_demo.embedders.qwen_client import EmbeddingClient, EmbeddingClientError
 
 
 class DummyResponse:

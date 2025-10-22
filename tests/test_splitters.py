@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from chunkers.recursive_splitter import RecursiveTextSplitter
-from chunkers.semantic_splitter import SemanticSplitter
+from assistant_demo.chunkers.recursive_splitter import RecursiveTextSplitter
+from assistant_demo.chunkers.semantic_splitter import SemanticSplitter
 
 
 def test_recursive_splitter_long_text() -> None:

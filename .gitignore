@@ -1,0 +1,26 @@
+# Python 构建与缓存
+__pycache__/
+*.py[cod]
+*.pyo
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# 覆盖率与测试输出
+.coverage
+coverage.xml
+htmlcov/
+
+# 构建产物
+build/
+dist/
+*.egg-info/
+
+# 项目运行时生成的数据
+data/
+var/
+logs/
+
+# 编辑器配置
+.vscode/
+.idea/

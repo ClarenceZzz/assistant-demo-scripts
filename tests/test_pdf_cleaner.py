@@ -7,7 +7,7 @@ from typing import Dict, Iterable, List
 
 import pytest
 
-from cleaners.pdf import PdfCleaner
+from assistant_demo.cleaners.pdf import PdfCleaner
 
 
 @dataclass
@@ -63,7 +63,7 @@ def _word(
 
 
 def _patch_pdf(monkeypatch: pytest.MonkeyPatch, fake_pdf: _FakePDF) -> None:
-    monkeypatch.setattr("cleaners.pdf.pdfplumber.open", lambda _path: fake_pdf)
+    monkeypatch.setattr("assistant_demo.cleaners.pdf.pdfplumber.open", lambda _path: fake_pdf)
 
 
 def test_pdf_cleaner_filters_header_and_footer(monkeypatch: pytest.MonkeyPatch) -> None:

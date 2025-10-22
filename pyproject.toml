@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assistant-demo"
+version = "0.1.0"
+description = "Document ingestion pipeline skeleton for assistant demos."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Proprietary"}
+authors = [{name = "Assistant Demo Team"}]
+dependencies = [
+    "pdfplumber>=0.11,<0.12",
+    "beautifulsoup4>=4.12,<5",
+    "requests>=2.31,<3",
+    "psycopg2>=2.9,<3",
+    "tenacity>=8.3,<9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2,<9",
+    "pytest-mock>=3.14,<4",
+    "pytest-cov>=4.1,<5",
+    "black>=24.3,<25",
+    "isort>=5.12,<6",
+    "mypy>=1.11,<2",
+]
+
+[project.scripts]
+assistant-demo = "assistant_demo.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"assistant_demo" = ["configs/*.json"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+src_paths = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+pretty = true
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["assistant_demo"]

@@ -7,7 +7,7 @@ from typing import Iterable, List
 import psycopg2
 import pytest
 
-from storages.postgres_writer import PostgresWriter, PostgresWriterError
+from assistant_demo.storages.postgres_writer import PostgresWriter, PostgresWriterError
 
 TEST_TABLE = "rag_chunks_test"
 VECTOR_DIM = 4

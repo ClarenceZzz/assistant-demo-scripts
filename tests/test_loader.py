@@ -6,8 +6,8 @@ from typing import List
 
 import pytest
 
-from embedders.qwen_client import EmbeddingClientError
-from loaders.main_loader import EmbeddingLoader
+from assistant_demo.embedders.qwen_client import EmbeddingClientError
+from assistant_demo.loaders.main_loader import EmbeddingLoader
 
 
 class DummyEmbeddingClient:
